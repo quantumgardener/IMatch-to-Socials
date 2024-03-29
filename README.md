@@ -6,6 +6,8 @@
 > - [@dcbuchan@pixelfed.au](https://pixelfed.au/dcbuchan)
 > - [dcbuchan](https://www.flickr.com/photos/dcbuchan/)
 
+**Only a small set of API endpoint calls are catered for. Just those I need for now.**
+
 Obviously you will need some programming chops to work with what is presented here. I've commented the code extensively. Take it and play, but be sure you have backups of everything. This code works for my setup. It may not work for yours.
 
 ## Scripts
