@@ -17,7 +17,7 @@ All scripts require Python 3.10 or later.
 | **IMatchAPI.py**          | API wrapper that simplifies calls to IMatch                   | Your own copy of IMatch                                                            |
 | **IMatch to Pixelfed.py** | Code to pull infomration about images, and upload to Pixelfed | [Mastodon.py](https://pypi.org/project/Mastodon.py/) and your own Pixelfed app key |
 ## Further documentation
-Furher documentation, including explanation on how I've set up my IMatch database for this to work can be found at [IMatch to Socials](https://)
+Furher documentation, including explanation on how I've set up my IMatch database for this to work can be found at [IMatch to Socials](https://quantumgardener.info/notes/imatch-to-socials).
 
 
 > The pixelfed example could be used for any Mastodon instance.
