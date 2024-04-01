@@ -82,9 +82,9 @@ def getIMatchInfo():
     # Grab the filename, the rest comes from the master
     imagesInfo = im.getFileInfo(candiateImageIDs, params)
     categoriesInfo = im.getFileCategories(candiateImageIDs, params={
-        'fields' : 'path'
+        'fields' : 'path,description'
     })
-
+    
     # Build a dictionary of output files from the information we have so far. With this we can overlay
     # information sourced from the master files. 
     #
@@ -117,8 +117,13 @@ def getIMatchInfo():
                     if splits[1] == "flickr":
                         # Need to grab any albums and groups
                         try:
-                            category = splits[3].split("[")[1][:-1] # Pull the code from between the [ ]
-                            image[splits[2]].append(category)
+                            if splits[2] == "albums":
+                                # Code is in the name
+                                category = splits[3].split("[")[1][:-1] # Pull the code from between the [ ]
+                                image["albums"].append(category)
+                            if splits[2] == "groups":
+                                # Code is in the description due to the presence of @ being illegal in the name
+                                image["groups"].append(categories['description'])
                         except IndexError:
                             pass #no groups or albums found
 
@@ -129,7 +134,6 @@ def getIMatchInfo():
     # Now get all information from the master, assuming no propogatation has ocurred
     # and to collect shooting information that would not have propogated anyway
             
-
     masterParams = {
         "fields"           : "filename,id",
         "tagtitle"         : "title",
@@ -177,6 +181,7 @@ def getIMatchInfo():
                             image['keywords'].append(splits[4]) # location
                         except IndexError:
                             pass
+                        
                     case 'nature':
                         for nature in splits[1:]:
                             image['keywords'].append(nature) # Get the leaf
