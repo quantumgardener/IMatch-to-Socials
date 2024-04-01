@@ -9,6 +9,7 @@ import requests   # See: http://docs.python-requests.org/en/master/
 import sys
 from IMatchAPI import IMatchAPI, IMatchUtility
 from flickrapi import FlickrAPI, FlickrError
+from datetime import datetime
 import flickr_support
 import pprint
 import logging
@@ -44,7 +45,7 @@ for id in im['missing']:
         im['data'][id]['filename'],
         title = im['data'][id]['title'] if im['data'][id]['title'] != '' else im['data'][id]['filename'],
         description = im['data'][id]['description'],
-        is_public=1, # 0 for hidden and testing, 1 for public
+        is_public=0, # 0 for hidden and testing, 1 for public
         is_friend=0,
         is_family=0
     )
@@ -56,8 +57,9 @@ for id in im['missing']:
 
     # Update the image in IMatch by adding the attributes below.
     im['api'].setAttributes("flickr", [id], data = {
-        #'posted' : status['created_at'].isoformat()[:10],
+        'posted' : datetime.now().isoformat()[:10],
         'photo_id' : photo_id,
+        'url' : f"https://www.flickr.com/photos/dcbuchan/{photo_id}"
     })
     count += 1
     
