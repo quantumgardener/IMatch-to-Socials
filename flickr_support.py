@@ -1,10 +1,17 @@
 #!/usr/bin/env python
 
+# pip install tzdata
+# -----------------------------------------------------------------------------
+# Pull a lot of the bulk processing out of the main script for ease of
+# understanding what's where.
+
 import sys
 from IMatchAPI import IMatchAPI, IMatchUtility
 from flickrapi import FlickrAPI, FlickrError
 import pprint
 import json
+from datetime import datetime, timezone
+from zoneinfo import ZoneInfo
 import logging
 logging.basicConfig(level=logging.INFO)
 logging.getLogger('requests_oauthlib').setLevel(logging.INFO)
@@ -174,7 +181,7 @@ def getIMatchInfo():
                         for nature in splits[1:]:
                             image['keywords'].append(nature) # Get the leaf
         except KeyError:
-            logging.error(f"Keywrods not found for image {masterID} at {info['fileName']}.")
+            logging.error(f"Keywords not found for image {masterID} at {info['fileName']}.")
             raise SystemExit
         
 
@@ -244,10 +251,11 @@ def _downloadFlickrInfo(api):
     progress = 1
     for photo_id in flickrInfo:
         try:
+            logging.info(f'flickr: Fetched album, group and date information for "{flickrInfo[photo_id]['title']}" ({progress}/{len(flickrInfo)})')
+
             resp = api.photos.getAllContexts(photo_id = photo_id, format="parsed-json")
 
-            logging.info(f'flickr: Fetched album and group information for "{flickrInfo[photo_id]['title']}" ({progress}/{len(flickrInfo)})')
-
+            
             if 'set' in resp:
                 for set in resp['set']: # a.k.a. albums
                     flickrInfo[photo_id]['albums'].append(set['id'])
@@ -255,6 +263,11 @@ def _downloadFlickrInfo(api):
             if 'pool' in resp:
                 for pool in resp['pool']: # a.k.a. groups
                     flickrInfo[photo_id]['groups'].append(pool['id'])
+
+            resp = api.photos.getInfo(photo_id = photo_id, format = "parsed-json")
+
+            posted = datetime.fromtimestamp(int(resp['photo']['dates']['posted'])).astimezone(ZoneInfo("Australia/Melbourne"))
+            flickrInfo[photo_id]['posted'] = posted.strftime("%Y-%m-%d")
 
             progress += 1
 
