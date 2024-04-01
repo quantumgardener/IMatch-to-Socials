@@ -8,6 +8,9 @@
 
 **Only a small set of API endpoint calls are catered for. Just those I need for now.**
 
+## WARNING! WARNING! WARNING!
+**BE REALLY CAREFUL. CODE MODIFIES IMATCH AND SOCIAL PLATFORMS**. I'm not responsible for any loss of your data.
+
 Obviously you will need some programming chops to work with what is presented here. I've commented the code extensively. Take it and play, but be sure you have backups of everything. This code works for my setup. It may not work for yours.
 
 ## Scripts
@@ -17,7 +20,10 @@ All scripts require Python 3.10 or later.
 | Script                    | What it does                                                  | Requirements                                                                       |
 | ------------------------- | ------------------------------------------------------------- | ---------------------------------------------------------------------------------- |
 | **IMatchAPI.py**          | API wrapper that simplifies calls to IMatch                   | Your own copy of IMatch                                                            |
-| **IMatch to Pixelfed.py** | Code to pull infomration about images, and upload to Pixelfed | [Mastodon.py](https://pypi.org/project/Mastodon.py/) and your own Pixelfed app key |
+| **IMatch to Pixelfed.py** | Code to pull information about images, and upload to Pixelfed | [Mastodon.py](https://pypi.org/project/Mastodon.py/) and your own Pixelfed app key |
+| **IMatch to flickr.py**   | Code to manage uploads to flickr                              | [flick api](https://stuvel.eu/software/flickrapi/) and "pip install tzdata"        |
+| **flickr_support.py**     | Heavy lifting of getting info from IMatch and flickr          |                                                                                    |
+| **flickr-data.json**      | Since flickr calls are so slow, save results.                 | This is ok as I control both environments                                          |
 ## Further documentation
 Furher documentation, including explanation on how I've set up my IMatch database for this to work can be found at [IMatch to Socials](https://quantumgardener.info/notes/imatch-to-socials).
 
