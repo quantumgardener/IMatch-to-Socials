@@ -142,7 +142,7 @@ class IMatchAPI:
         params['set'] = set
         params['id'] = self.utility.file_id_list(filelist)
 
-        logging.debug(f"Retreiving attributes for {params['id']}")
+        logging.debug(f"Retreivving attributes for {params['id']}")
         response = self.getIMatch( '/v1/attributes', params)
 
         # Strip away the wrapping from the result
@@ -204,8 +204,11 @@ class IMatchAPI:
         params["type"] = "masters"
 
         response = self.getIMatch( '/v1/files/relations', params)
-        
-        return response['files'][0]['masters'][0]['files'][0]['id']
+
+        if len(response['files'][0]['masters']) == 1:
+            return response['files'][0]['masters'][0]['files'][0]['id']
+        else:
+            return None
 
 
     def files_for_selection(self, params={'fields': 'id,filename'}):

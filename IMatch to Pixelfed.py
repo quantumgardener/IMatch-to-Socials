@@ -15,7 +15,9 @@ MB = 1048576
 MAX_SIZE = 8 * MB
 DXO = "DXO Pure Raw"
 
-# Check version as code uses the match (case/switch) statement introduced in Python 3.10 for keyword processing
+# -----------------------------------------------------------------------------
+# Check version as code uses the match (case/switch) statement introduced in 
+# Python 3.10 for keyword processing
 if (sys.version_info.major < 3):
     logging.error(f"Python version 3.10 or later required. You are running with version {sys.version_info.major}.{sys.version_info.minor}")
     raise SystemExit
@@ -23,24 +25,24 @@ elif (sys.version_info.major == 3) and (sys.version_info.minor < 10):
     logging.error(f"Python version 3.10 or later required. You are running with version {sys.version_info.major}.{sys.version_info.minor}")
     raise SystemExit
 
-
+# -----------------------------------------------------------------------------
 # Set up the connection to IMatch and utility helper class
 im = IMatchAPI()
 iu = IMatchUtility()
 
-# Get a list of candiate files to upload. Everything in the category
+# -----------------------------------------------------------------------------
+# Retrieve the complete set of images from IMatch. Determine which need to be 
+# uploaded
 category = 'Socials|pixelfed'
 candiateImageIDs = im.getCategoryFiles(category)
-if len(candiateImageIDs) == 0:
-    logging.warning(f'No images found in the "{category}" category: Exiting.')
-    raise SystemExit
 
-# Get the attributes for each of the candidate files. Files with an existing attribute record
-# are assumed to be already uploaded.
+# Get the attributes for each of the candidate files. Files with an existing 
+# attribute record are assumed to be already uploaded.
 postedImages = im.getAttributes("pixelfed", candiateImageIDs)
 
-# Compare candiates to postedImages. Candidate images without attributes are not yet posted i.e., missing from pixelfed
-# Once successfully posted, an attibute record is create for these imsages and they won't be posted again.
+# Compare candiates to postedImages. Candidate images without attributes are 
+# not yet posted i.e., missing from flickr. Once successfully posted, an 
+# attibute record is create for these imsages and they won't be posted again.
 postedImageIDs = iu.listIDs(postedImages)
 missingImages = set(candiateImageIDs) - set(postedImageIDs)
 logging.info(f"{len(candiateImageIDs)} candidate images. {len(postedImageIDs)} already posted. {len(missingImages)} to process and upload.")
@@ -49,10 +51,12 @@ if len(missingImages) == 0:
     logging.info("Exiting: No files could be found to process.")
     raise SystemExit
 
-## Now begins the process of collating the information to be posted alongside the image itself
-# This is the information we want from the version to be be posted, and later the master. Certain
-# camera and shooting information is not propogated through the versions, so we will need to 
-# walk back up the version > master tree to obtain it.
+# -----------------------------------------------------------------------------
+# Now begins the process of collating the information to be posted alongside 
+# the image itself. This is the information we want from the version to be be 
+# posted, and later the master. Certain camera and shooting information is not
+# propogated through the versions, so we will need to walk back up the version
+# > master tree to obtain it.
 params = {
     "fields"          : "filename,id,name,size",
     "tagtitle"        : "title",
@@ -69,7 +73,7 @@ params = {
 
 # Get info for the missing images. We need the information above
 # and some category information as well. The category information is used to
-# generate some additional keywords. The 
+# generate some additional keywords.  
 imagesInfo = im.getFileInfo(missingImages, params)
 categoriesInfo = im.getFileCategories(missingImages, params={
     'fields' : 'path'
@@ -182,17 +186,53 @@ ISO {outputImages[image]['iso']}{outputImages[image]['dxo']} | {outputImages[ima
 
 #{" #".join(outputImages[image]['keywords'])}"""
 
-# Retrieve connection details from IMatch Application Variables
-# https://www.photools.com/help/imatch/index.html#var_basics.htm
-pixelfed_token = im.getAppVar("pixelfed_token")
-pixelfed_url = im.getAppVar("pixelfed_url")
+# for image in outputImages.values():
+
+#     # Format the description
+#     print(image)
+
+#     shootingInfo = ""
+#     if image['iso'].strip() != '':
+#         shootingInfo += f"ISO {image['iso']}{image['dxo']} | "
+#     if image['shutterspeed'].strip() != '':
+#         shootingInfo += f"{image['shutterspeed']} sec | "
+#     if image['aperture'] != '':
+#         shootingInfo += 'f/{0:.3g} | '.format(float(image['aperture']))
+#     if image['focallength'].strip() != '':
+#         shootingInfo += f"{image['focallength']}"
+
+#     # May need some tidy up
+#     if shootingInfo[-3:] == " | ":
+#         shootingInfo = shootingInfo[:-3]
+
+#     if shootingInfo == '':
+#         shootingInfo = "Shooting info not available"
+    
+#     cameraInfo = ""
+#     if image['model'].strip() != '':
+#         cameraInfo += f"{image['model']} | "
+#     if image['lens'].strip() != '':
+#         cameraInfo += f"{image['lens']}"
+
+#     # May need some tidy up
+#     if cameraInfo[-3:] == " | ":
+#         cameraInfo = cameraInfo[:-3]
+    
+#     image['status'] = f"""{image['title']} -- {image['description']}
+
+# {shootingInfo}
+# {cameraInfo}
+
+# #{" #".join(image['keywords'])}"""
 
 ## All ready to upload now.
 
-# Create a Mastodon instance
+# -----------------------------------------------------------------------------
+# Create a Mastodon instance. Get secrets from IMatch
+# https://www.photools.com/help/imatch/index.html#var_basics.htm
 pixelfed = mastodon.Mastodon(
-    access_token = pixelfed_token,
-    api_base_url = pixelfed_url
+    access_token = im.getAppVar("pixelfed_token"),
+    api_base_url = im.getAppVar("pixelfed_url")
 )
 
 # Fetch my account details. Serves as a good check of connection details
