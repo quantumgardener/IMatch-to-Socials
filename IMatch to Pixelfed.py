@@ -12,7 +12,7 @@ logging.getLogger('urllib3').setLevel(logging.INFO) # Don't want this debug leve
 pp = pprint.PrettyPrinter(width=120)
 
 MB = 1048576
-MAX_SIZE = 8 * MB
+MAX_SIZE = 15 * MB  # As advised by @shlee@aus.social on 2024-04-02
 DXO = "DXO Pure Raw"
 
 # -----------------------------------------------------------------------------
