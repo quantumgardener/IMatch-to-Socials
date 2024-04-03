@@ -32,8 +32,9 @@ api = FlickrAPI(im['api'].getAppVar("flickr_apikey"), im['api'].getAppVar("flick
 api.authenticate_via_browser(perms='delete')
 logging.info("flickr: Authenticated.")
 
-flickr = flickr_support.getFlickrInfo(api, refresh=False)  # True to force reload
+flickr = flickr_support.getFlickrInfo(api, refresh=False, albums=im['albums'], groups=im['groups'])  # True to force reload
 
+pp.pprint(flickr)
 # ------------------------------------------------------------------------------
 # Upload missing photos first
 
@@ -46,9 +47,9 @@ for id in im['missing']:
   
     resp = api.upload(
         image['filename'],
-        title = image['title'] if image['title'] != '' else image['filename'],
+        title = image['title'] if image['title'] != '' else image['filename'].split("/")[-1:],
         description = image['description'],
-        is_public=1, # 0 for hidden and testing, 1 for public
+        is_public=0, # 0 for hidden and testing, 1 for public
         is_friend=0,
         is_family=0
     )
@@ -83,7 +84,7 @@ for id in im['missing']:
     })
 
     # Add image into the flickr construct for caching next time.
-    flickr["{photo_id}"] = {
+    flickr['data']["{photo_id}"] = {
         "title"  : im['data'][id]['title'],
         "albums" : im['data'][id]['albums'],
         "groups" : im['data'][id]['groups'],
@@ -92,11 +93,7 @@ for id in im['missing']:
     flickr_support.saveFlickrInfo(flickr)
 
     count += 1
-    
 
-# ------------------------------------------------------------------------------
-# print('Step 2: Upload photo')
-# resp = flickr.upload('tests/photo.jpg', is_public=0, is_friend=0, is_family=0)
 
 
 # # ------------------------------------------------------------------------------
