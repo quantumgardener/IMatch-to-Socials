@@ -6,7 +6,7 @@
 # understanding what's where.
 
 import sys
-from IMatchAPI import IMatchAPI, IMatchUtility
+from api.IMatchAPI import IMatchAPI, IMatchUtility
 from flickrapi import FlickrAPI, FlickrError
 import pprint
 import json
@@ -58,9 +58,9 @@ def getIMatchInfo():
     missingImageIDs = set(candiateImageIDs) - set(postedImageIDs)
     logging.info(f"{len(candiateImageIDs)} candidate images. {len(postedImageIDs)} already posted. {len(missingImageIDs)} to process and upload.")
 
-    if len(missingImageIDs) == 0:
-        logging.info("Exiting: No files could be found to process.")
-        raise SystemExit
+    # if len(missingImageIDs) == 0:
+    #     logging.info("Exiting: No files could be found to process.")
+    #     raise SystemExit
 
     # -----------------------------------------------------------------------------
     # Now begins the process of collating the information to be posted alongside 
@@ -193,21 +193,33 @@ def getIMatchInfo():
         # Remove spaced to clean up the keywords as tagging doesn't like spaces
         image['keywords'] = list(map(lambda x: x.replace(" ",""), image['keywords']))
 
+    # Create sets of albums and groups. We could grab this earlier as the categories
+    # are processed, but here ensures we have a complete set and is easier to understand
+    # and modify should the need arise.
+    albums = set()
+    groups = set()
+    for id in outputImages:
+        for album in outputImages[id]['albums']:
+            albums.add(album)
+        for group in outputImages[id]['groups']:
+            groups.add(group)
 
     return {
         "api"        : im,
         "candidates" : candiateImageIDs,
         "posted"     : postedImageIDs,
         "missing"    : missingImageIDs,
+        "albums"     : albums,
+        "groups"     : groups,
         "data"       : outputImages
     }
 
 
-def getFlickrInfo(api, refresh=False):
+def getFlickrInfo(api, albums, groups, refresh=False):
 
     if refresh:
         # Force full refresh from flickr
-        flickrInfo = _downloadFlickrInfo(api)
+        flickrInfo = _downloadFlickrInfo(api, albums, groups)
     else:
         # Don't hassle flickr if we alread have the information locally
         try:
@@ -218,7 +230,7 @@ def getFlickrInfo(api, refresh=False):
         except FileNotFoundError:
             # Off to flickr
             logging.warning("Conducting full fetch of photo information from flickr required.")
-            flickrInfo = _downloadFlickrInfo(api)
+            flickrInfo = _downloadFlickrInfo(api, albums, groups)
 
     saveFlickrInfo(flickrInfo)
     return {
@@ -229,10 +241,13 @@ def saveFlickrInfo(info):
     with open(FLICKR_CACHE, "w") as f:
         json.dump(info,f, ensure_ascii=False, indent=4)
 
-def _downloadFlickrInfo(api): 
-    flickrInfo = {}
-    page = 1
+def _downloadFlickrInfo(api, albums, groups): 
 
+    # This is where all the photo infomration will end up, keyed by photo_id
+    flickrInfo = {}
+
+    # Get basic photo information
+    page = 1
     while True:
         try:
             resp = api.photos.search(user_id="142019185@N05", page=page, format="parsed-json")
@@ -253,21 +268,50 @@ def _downloadFlickrInfo(api):
             print(fe)
             raise SystemExit
 
+    # Get album (set) information
+    for album_id in albums:
+        page = 1
+        while True:
+            try:    
+                resp = api.photosets_getPhotos(photoset_id = album_id, user_id = "142019185@N05", format="parsed-json", page=page)
+
+                for photo in resp['photoset']['photo']:
+                    flickrInfo[photo['id']]['albums'].append(album_id)
+
+                logging.info(f"flickr: Fetched album information: {album_id} ({page}/{resp['photoset']['pages']})")
+
+                if page < resp['photoset']['pages']:
+                    page += 1
+                else:
+                    break
+            except FlickrError as fe:
+                print(fe)
+                raise SystemExit
+            
+    # Get group (pool) information
+    for group_id in groups:
+        page = 1
+        while True:
+            try:    
+                resp = api.groups_pools_getPhotos(group_id = group_id, user_id = "142019185@N05", format="parsed-json", page=page)
+
+                for photo in resp['photos']['photo']:
+                    flickrInfo[photo['id']]['groups'].append(group_id)
+
+                logging.info(f"flickr: Fetched group information: {group_id} ({page}/{resp['photos']['pages']})")
+
+                if page < resp['photos']['pages']:
+                    page += 1
+                else:
+                    break
+            except FlickrError as fe:
+                print(fe)
+                raise SystemExit
+
     progress = 1
     for photo_id in flickrInfo:
         try:
-            logging.info(f'flickr: Fetched album, group and date information for "{flickrInfo[photo_id]['title']}" ({progress}/{len(flickrInfo)})')
-
-            resp = api.photos.getAllContexts(photo_id = photo_id, format="parsed-json")
-
-            
-            if 'set' in resp:
-                for set in resp['set']: # a.k.a. albums
-                    flickrInfo[photo_id]['albums'].append(set['id'])
-
-            if 'pool' in resp:
-                for pool in resp['pool']: # a.k.a. groups
-                    flickrInfo[photo_id]['groups'].append(pool['id'])
+            logging.info(f'flickr: Fetching date information for "{flickrInfo[photo_id]['title']}" ({progress}/{len(flickrInfo)})')
 
             resp = api.photos.getInfo(photo_id = photo_id, format = "parsed-json")
 
