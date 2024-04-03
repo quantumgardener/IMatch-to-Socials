@@ -6,7 +6,7 @@
 # understanding what's where.
 
 import sys
-from IMatchAPI import IMatchAPI, IMatchUtility
+from api.IMatchAPI import IMatchAPI, IMatchUtility
 from flickrapi import FlickrAPI, FlickrError
 import pprint
 import json
