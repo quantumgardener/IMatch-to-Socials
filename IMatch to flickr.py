@@ -7,10 +7,10 @@ import os         # For Windows stuff
 import json       # json library
 import requests   # See: http://docs.python-requests.org/en/master/
 import sys
-from api.IMatchAPI import IMatchAPI, IMatchUtility
+from IMatchAPI import IMatchAPI, IMatchUtility
 from flickrapi import FlickrAPI, FlickrError
 from datetime import datetime
-import flickr.flickr_support as flickr_support
+import flickr_support
 import pprint
 import logging
 logging.basicConfig(level=logging.INFO)

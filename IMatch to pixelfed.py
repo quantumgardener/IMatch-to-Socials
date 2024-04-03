@@ -3,7 +3,7 @@
 
 import sys
 import mastodon
-from api.IMatchAPI import IMatchAPI, IMatchUtility
+from IMatchAPI import IMatchAPI, IMatchUtility
 import pprint
 import datetime
 import logging

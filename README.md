@@ -19,11 +19,11 @@ All scripts require Python 3.10 or later.
 
 | Script                    | What it does                                                  | Requirements                                                                       |
 | ------------------------- | ------------------------------------------------------------- | ---------------------------------------------------------------------------------- |
-| **api/IMatchAPI.py**          | API wrapper that simplifies calls to IMatch                   | Your own copy of IMatch                                                            |
-| **flickr/IMatch to flickr.py**   | Code to manage uploads to flickr                              | [flick api](https://stuvel.eu/software/flickrapi/) and "pip install tzdata"        |
-| **flickr/flickr_support.py**     | Heavy lifting of getting info from IMatch and flickr          |                                                                                    |
-| **flickr/flickr-data.json**      | Since flickr calls are so slow, save results.                 | This is ok as I control both environments                                          |
-| **pixelfed/IMatch to Pixelfed.py** | Code to pull information about images, and upload to Pixelfed | [Mastodon.py](https://pypi.org/project/Mastodon.py/) and your own Pixelfed app key |
+| **IMatchAPI.py**          | API wrapper that simplifies calls to IMatch                   | Your own copy of IMatch                                                            |
+| **IMatch to Pixelfed.py** | Code to pull information about images, and upload to Pixelfed | [Mastodon.py](https://pypi.org/project/Mastodon.py/) and your own Pixelfed app key |
+| **IMatch to flickr.py**   | Code to manage uploads to flickr                              | [flick api](https://stuvel.eu/software/flickrapi/) and "pip install tzdata"        |
+| **flickr_support.py**     | Heavy lifting of getting info from IMatch and flickr          |                                                                                    |
+| **flickr-data.json**      | Since flickr calls are so slow, save results.                 | This is ok as I control both environments                                          |
 ## Further documentation
 Furher documentation, including explanation on how I've set up my IMatch database for this to work can be found at [IMatch to Socials](https://quantumgardener.info/notes/imatch-to-socials).
 
