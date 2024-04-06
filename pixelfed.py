@@ -105,8 +105,6 @@ class PixelfedController(PlatformController):
             # direct = Visible only to mentioned users.
 
             self._visibility = IMatchAPI.get_application_variable("pixelfed_visibility")
-            self._visibility = "private"
-
             self.api = pixelfed
 
     def platform_add(self):
