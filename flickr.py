@@ -69,6 +69,9 @@ class FlickrImage(IMatchImage):
                     self.errors.append(f"-- missing '{attribute}'.")
             except AttributeError:
                 self.errors.append(f"-- missing '{attribute}'.")
+        if self.size > FlickrImage.__MAX_SIZE:
+            logging.error(f'Skipping: {self.name} is too large to upload: {self.size/MB_SIZE:2.1f} MB. Max is {FlickrImage.__MAX_SIZE/MB_SIZE:2.1f} MB.')
+            self.errors.append(f"-- {self.size/MB_SIZE:2.1f} MB exceeds max {FlickrImage.__MAX_SIZE/MB_SIZE:2.1f} MB.")
         return len(self.errors) == 0
 
     @property
@@ -129,6 +132,10 @@ class FlickrController(PlatformController):
                 )
             
             photo_id = response.findtext('photoid')
+            
+            # Since we expect no EXIF data in the file, flickr will take the upload time from the last modified date of the file
+            # and ignore XMP::EXIF fields. Fix that by setting the time ourselves. The format we have is 
+            response = self.api.photos.setDates(photo_id=photo_id, date_taken=str(image.date_time), date_taken_granularity=0)
 
             for album in image.albums:
                 response = self.api.photosets_addPhoto(photoset_id=album, photo_id=photo_id)
@@ -147,6 +154,7 @@ class FlickrController(PlatformController):
             
             # Now add back the "Approved" tags. If added on upload, they combine with IPTC weirdly
             resp = self.api.photos.addTags(tags=",".join(image.keywords), photo_id=photo_id)
+
 
             # Update the image in IMatch by adding the attributes below.
             posted = datetime.now().isoformat()[:10]

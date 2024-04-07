@@ -20,15 +20,11 @@ class PixelfedImage(IMatchImage):
         super().__init__(id)
         self.alt_text = None
 
-        if self.size > PixelfedImage.__MAX_SIZE:
-            logging.warning(f'{self.filename} may be too large to upload: {self.size/MB_SIZE:2.1f} MB. Max is {PixelfedImage.__MAX_SIZE/MB_SIZE:2.1f} MB.')
-
-
     def prepare_for_upload(self) -> None:
         """Build variables ready for uploading."""
         super().prepare_for_upload()
 
-        tmp_description = [self.description]
+        tmp_description = [f"{self.title} -- {self.description} (Taken {self.date_time.strftime("%#d %B %Y")})"]
         tmp_description.append('')
         if len(self.keywords) > 0:
             tmp_description.append(" ".join(["#" + keyword for keyword in self.keywords]))  # Ensure pixelfed keywords are hashtags
@@ -53,6 +49,9 @@ class PixelfedImage(IMatchImage):
                     self.errors.append(f"-- missing '{attribute}'.")
             except AttributeError:
                 self.errors.append(f"-- missing '{attribute}'.")
+        if self.size > PixelfedImage.__MAX_SIZE:
+            logging.error(f'Skipping: {self.name} is too large to upload: {self.size/MB_SIZE:2.1f} MB. Max is {PixelfedImage.__MAX_SIZE/MB_SIZE:2.1f} MB.')
+            self.errors.append(f"-- {self.size/MB_SIZE:2.1f} MB exceeds max {PixelfedImage.__MAX_SIZE/MB_SIZE:2.1f} MB.")
         return len(self.errors) == 0
 
     @property

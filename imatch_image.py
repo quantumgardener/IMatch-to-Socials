@@ -1,5 +1,6 @@
 from IMatchAPI import IMatchAPI
 from pprint import pprint
+from datetime import datetime
 import logging
 logging.basicConfig(level=logging.INFO)
 logging.getLogger('urllib3').setLevel(logging.INFO) # Don't want this debug level to cloud ours
@@ -23,17 +24,21 @@ class IMatchImage():
         # propogated through the versions, so we will need to walk back up the version
         # > master tree to obtain it.
         params = {
-            "fields"           : "filename,name,size",
+            "fields"           : "datetime,filename,name,size",
             }
         
         image_info = IMatchAPI().get_file_metadata([self.id], params=params)[0]
         try:
             for attribute in image_info.keys():
                 # fileName is a special case. Ask for filename, get fileName in results
-                if attribute == "fileName":
-                    setattr(self, 'filename', image_info[attribute])
-                else:      
-                    setattr(self, attribute, image_info[attribute])  
+                match attribute:
+                    case "fileName":
+                        setattr(self, 'filename', image_info[attribute])
+                    case "dateTime":
+                        date_time = datetime.strptime(image_info[attribute],'%Y-%m-%dT%H:%M:%S')
+                        setattr(self, "date_time", date_time)  
+                    case other:      
+                        setattr(self, attribute, image_info[attribute])  
         except KeyError:
             print(f"Attribute {attribute} not returned from get_file_metadata() call")
             sys.exit()
@@ -79,14 +84,17 @@ class IMatchImage():
         # print(f"prepare_for_upload() not implemented for {type(self).__name__}")
         # raise NotImplementedError
         """Build variables ready for uploading."""
-        self.keywords = []  # These are the keywords to output. self.hierachy_keywords is what comes in
+        self.keywords = set()  # These are the keywords to output. self.hierachy_keywords is what comes in
         for keyword in self.hierarchical_keywords:
             splits = keyword.split("|")
             match splits[0]:
+                case 'art':
+                    for artform in splits:
+                        self.add_keyword(artform)
                 case 'genre':
                     # Genre is tagged with itself and with "photography appended"
                     for genre in splits[1:]:
-                        self.keywords.append(genre)
+                        self.keywords.add(genre)
                         if genre != 'astrophotography':
                             self.add_keyword(genre+"photography")
                 case 'Location':
@@ -109,7 +117,7 @@ class IMatchImage():
     def add_keyword(self, keyword) -> str:
         """Ensure all keywords are added without spaces"""
         no_spaces_keyword = keyword.replace(" ","")
-        self.keywords.append(no_spaces_keyword)
+        self.keywords.add(no_spaces_keyword)
         return no_spaces_keyword
     
     @property
