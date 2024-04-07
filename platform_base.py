@@ -1,3 +1,4 @@
+from imatch_image import IMatchImage
 from pprint import pprint
 import logging
 logging.basicConfig(level=logging.INFO)
@@ -20,31 +21,31 @@ class PlatformController():
         image.controller = self
         self.images.add(image)
       
-    def platform_add(self):
+    def add(self):
         """Upload and add image to platform"""
         raise NotImplementedError("Subclasses must implement this for their specific platnform.")
 
-    def platform_delete(self):
+    def delete(self):
         """Delete image from platform"""
         raise NotImplementedError("Subclasses must implement this for their specific platnform.")
 
-    def platform_update(self):
+    def update(self):
         """Update image on platform"""
         raise NotImplementedError("Subclasses must implement this for their specific platnform.")
 
-    def prepare_images(self):
+    def classify_images(self):
         for image in self.images:
-            if not image.is_final:
-                if image.is_valid:               
-                    image.prepare_for_upload()
-                    if not image.is_on_platform:
-                        self.images_to_add.add(image)
-                    else:
-                        self.images_to_update.add(image)
-                else:
+            match image.operation:
+                case IMatchImage.OP_ADD:
+                    self.images_to_add.add(image)
+                case IMatchImage.OP_UPDATE:
+                    self.images_to_update.add(image)
+                case IMatchImage.OP_DELETE:
+                    self.images_to_delete.add(image)
+                case IMatchImage.OP_INVALID:
                     self.invalid_images.add(image)
-            else:
-                pass
+                case other:
+                    pass
 
     @property
     def stats(self):

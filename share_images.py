@@ -52,22 +52,33 @@ if __name__ == "__main__":
     # or subcategories.
 
     ##pprint(IMatchAPI().get_imatch("v1/collections",params={'id' : 'all','fields':'id,path'}))
-
+    
     images = []             # main image store
     controllers = {}
 
+    IMatchAPI()             # Perform initial connection
+    
+    # Gather all image information
     for platform in Factory.platforms.keys():
         logging.info(f"{platform}: Gathering images from IMatch.")
         controllers[platform] = Factory.get_controller_class(platform)()
         for image_id in IMatchAPI().get_files_in_category(f"Socials|{platform}"):
             image = Factory.build_image(image_id, platform)
             controllers[platform].add_image(image)
-        logging.info(f"{platform}: {controllers[platform].stats['total']} images to process from IMatch.")
+        logging.info(f"{platform}: {controllers[platform].stats['total']} images gathered from IMatch.")
+        controllers[platform].classify_images()
 
-        controllers[platform].prepare_images()
-        controllers[platform].platform_add()
 
-        logging.info(f"{platform}: Processing complete.")
+    # Perform all image tasks. This allows us the necessary feature of being able to share pins etc.
+    # A single image can be on multiple platforms, and finishing an operation on one, then clearing it
+    # means the next platform will ignore the image altogether.
+    for platform in Factory.platforms.keys():
+        controllers[platform].add()
+        controllers[platform].update()
+        controllers[platform].delete()
+
+    # Placeholder to display errors
+    logging.info(f"{platform}: Processing complete.")
         
     print("Done.")
 

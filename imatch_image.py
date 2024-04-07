@@ -5,12 +5,18 @@ import logging
 logging.basicConfig(level=logging.INFO)
 logging.getLogger('urllib3').setLevel(logging.INFO) # Don't want this debug level to cloud ours
 
-COLLECTION_WRITE_BACK_PENDING = 5
-COLLECTION_FLAGS_SET = 11           # Checquered flag
-COLLECTION_FLAGS_UNSET = 12         # Red flag
 MB_SIZE = 1048576
 
 class IMatchImage():
+
+    UPDATE_INDICATOR = IMatchAPI.COLLECTION_PINS_GREEN
+    DELETE_INDICATOR = IMatchAPI.COLLECTION_PINS_RED
+    ERROR_INDICATOR = IMatchAPI.COLLECTION_DOTS_RED
+    OP_INVALID = -1
+    OP_NONE = 0
+    OP_ADD = 1
+    OP_UPDATE = 2
+    OP_DELETE = 3
 
     def __init__(self, id) -> None:
         self.id = id
@@ -73,16 +79,34 @@ class IMatchImage():
         
         # Retrieve the list of categories the image belongs to.
         self.categories = IMatchAPI().get_file_categories([self.id], params={'fields' : 'path,description'})[self.id]
+        
+        # Set the operation for this file.
+        self.operation = IMatchImage.OP_NONE
+        if self.is_valid:
+            if not self.is_on_platform:
+                self.operation = IMatchImage.OP_ADD
+            else:
+                # Check collections for overriding instructions
+                collections = IMatchAPI().file_collections(self.id)
+                if (IMatchImage.UPDATE_INDICATOR in collections) and (IMatchImage.DELETE_INDICATOR in collections):
+                    # We have conflicting instructions. 
+                    self.errors.append("Conflicting instructions. Both update and delete pins are set.")
+                    self.operation = IMatchImage.OP_INVALID
+                else:
+                    if IMatchImage.UPDATE_INDICATOR in collections:
+                        self.operation = IMatchImage.OP_UPDATE
+                    if IMatchImage.DELETE_INDICATOR in collections:
+                        self.operation = IMatchImage.OP_DELETE
+        else:
+            self.operation = IMatchImage.OP_INVALID
 
     def __repr__(self) -> str:
         return f"{type(self).__name__}(id: {self.id}, filename: {self.filename}, size: {self.size})"
 
     def __str__(self) -> str:
         return f"I'm a {type(self).__name__}"
-    
+       
     def prepare_for_upload(self) -> None:
-        # print(f"prepare_for_upload() not implemented for {type(self).__name__}")
-        # raise NotImplementedError
         """Build variables ready for uploading."""
         self.keywords = set()  # These are the keywords to output. self.hierachy_keywords is what comes in
         for keyword in self.hierarchical_keywords:
@@ -130,14 +154,14 @@ class IMatchImage():
     
     def list_errors(self) -> None:
         print(f"Errors were found with {type(self).__name__}(name: {self.name}). Please update the master file's metadata.")
-        IMatchAPI().set_collections(IMatchAPI.COLLECTION_DOTS_RED, self.id)
+        IMatchAPI().set_collections(IMatchAPI.COLLECTION_PINS_RED, self.id)
         for error in self.errors:
             print(error)
 
     @property
     def is_on_platform(self) -> bool:
         raise NotImplementedError("Subclasses must implement is_on_platform()")
-
+    
     @property
     def camera_info(self) -> str:
         """Standardise a basic way of presenting camera information on a single line"""
@@ -185,14 +209,13 @@ class IMatchImage():
             pass
            
         return " | ".join(shooting_info) if len(shooting_info) > 0 else ''
-
-    @property
-    def is_final(self) -> bool:
-        return COLLECTION_FLAGS_SET in IMatchAPI().file_collections(self.id)
-    
+   
     @property
     def is_valid(self) -> bool:
-        raise NotImplementedError("Subclasses should implement this for their platform's needs")
+        if self.is_master:
+            self.errors.append("Attemting to upload master image.")
+            return False
+        return True
 
     @property
     def controller(self):

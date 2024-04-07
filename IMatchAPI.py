@@ -325,7 +325,7 @@ class IMatchAPI:
             sys.exit()
 
     @classmethod
-    def set_collections(cls, collection, filelist, params={}):
+    def set_collections(cls, collection, filelist, op="add", params={}):
         """ Set collections for files."""
         if isinstance(collection, int):
             path = cls.collection_values[collection]
@@ -341,10 +341,10 @@ class IMatchAPI:
                 raise TypeError("Filelist argument must be single integer or list of integers.")      
             
         tasks = [{
-            'op' : 'add',
+            'op' : op,
             'path' : path
         }]
-        print(tasks)
+
         params['tasks'] = json.dumps(tasks)  # Necessary to stringify the tasks array before sending
 
         response = cls.post_imatch( '/v1/collections', params)

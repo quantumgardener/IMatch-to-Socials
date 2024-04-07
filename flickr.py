@@ -21,7 +21,6 @@ class FlickrImage(IMatchImage):
         if self.size > FlickrImage.__MAX_SIZE:
             logging.warning(f'{self.filename} may be too large to upload: {self.size/MB_SIZE:2.1f} MB. Max is {FlickrImage.__MAX_SIZE/MB_SIZE:2.1f} MB.')
 
-
     def prepare_for_upload(self) -> None:
         """Build variables ready for uploading."""
         super().prepare_for_upload()
@@ -63,6 +62,7 @@ class FlickrImage(IMatchImage):
     
     @property
     def is_valid(self) -> bool:
+        result = super().is_valid
         for attribute in ['title', 'description']:
             try:
                 if getattr(self, attribute).strip() == '':
@@ -72,7 +72,7 @@ class FlickrImage(IMatchImage):
         if self.size > FlickrImage.__MAX_SIZE:
             logging.error(f'Skipping: {self.name} is too large to upload: {self.size/MB_SIZE:2.1f} MB. Max is {FlickrImage.__MAX_SIZE/MB_SIZE:2.1f} MB.')
             self.errors.append(f"-- {self.size/MB_SIZE:2.1f} MB exceeds max {FlickrImage.__MAX_SIZE/MB_SIZE:2.1f} MB.")
-        return len(self.errors) == 0
+        return len(self.errors) == 0 and result
 
     @property
     def is_on_platform(self) -> bool:
@@ -111,16 +111,17 @@ class FlickrController(PlatformController):
             self.api = flickr
 
 
-    def platform_add(self):
+    def add(self):
         if len(self.images_to_add) == 0:
-            return  #N Nothing to see here
+            return  # Nothing to see here
         
         self.connect()
 
         progress_counter = 1
         progress_end = len(self.images_to_add)
         for image in self.images_to_add:
-            logging.info(f"Uploading: {image.filename} ({image.size/MB_SIZE:2.1f} MB) ({progress_counter}/{progress_end})")
+            image.prepare_for_upload()
+            logging.info(f"flickr: Adding {image.filename} ({image.size/MB_SIZE:2.1f} MB) ({progress_counter}/{progress_end})")
           
             response = self.api.upload(
                 image.filename,
@@ -163,7 +164,79 @@ class FlickrController(PlatformController):
                 'photo_id' : photo_id,
                 'url' : f"https://www.flickr.com/photos/dcbuchan/{photo_id}"
                 })
+                                
+            progress_counter += 1
+
+    def delete(self):
+        if len(self.images_to_delete) == 0:
+            return  # Nothing to see here
+        
+        self.connect()
+
+        progress_counter = 1
+        progress_end = len(self.images_to_delete)
+        for image in self.images_to_delete:
+            logging.info(f'flickr: FAKE Deleting ({progress_counter}/{progress_end}) "{image.title}" from "{image.filename}"')
+
+            IMatchAPI().set_collections(
+                collection=IMatchImage.DELETE_INDICATOR, 
+                filelist=image.id,
+                op = "remove")
+            progress_counter += 1        
+
+    def update(self):
+        if len(self.images_to_update) == 0:
+            return  # Nothing to see here
+        
+        self.connect()
+
+        progress_counter = 1
+        progress_end = len(self.images_to_update)
+        for image in self.images_to_update:
+            image.prepare_for_upload()
+            logging.info(f'flickr: Updating ({progress_counter}/{progress_end}) "{image.title}" from "{image.filename}"')
+
+            # response = self.api.upload(
+            #     image.filename,
+            #     title = image.title if image.title != '' else image.name,
+            #     description = image.full_description,
+            #     is_public = self.privacy['is_public'],
+            #     is_friend = self.privacy['is_friend'],
+            #     is_family = self.privacy['is_family'],
+            #     )
             
-                    
+            # photo_id = response.findtext('photoid')
+            
+            # # Since we expect no EXIF data in the file, flickr will take the upload time from the last modified date of the file
+            # # and ignore XMP::EXIF fields. Fix that by setting the time ourselves. The format we have is 
+            # response = self.api.photos.setDates(photo_id=photo_id, date_taken=str(image.date_time), date_taken_granularity=0)
+
+            # for album in image.albums:
+            #     response = self.api.photosets_addPhoto(photoset_id=album, photo_id=photo_id)
+
+            # for group in image.groups:
+            #     response = self.api.groups_pools_add(group_id=group, photo_id=photo_id)
+
+            # # flickr will bring in hierarchical keywords not under our control as level|level|level
+            # # which frankly is stupid. Easiest way is to delete them all. We don't know quite what
+            # # it will have loaded.
+            # ### THIS CODE IS NOT WORKING AND I CAN"T WORK OUT WHY. Does not delete, ALWAYS returns "ok"
+            # # resp = self.api.photos.getInfo(photo_id = photo_id, format = "parsed-json")
+            # # for badtag in resp['photo']['tags']['tag']:
+            # #     resp = self.api.photos.removeTag(tag=badtag['id'])
+            # #     
+            
+            # # Now add back the "Approved" tags. If added on upload, they combine with IPTC weirdly
+            # resp = self.api.photos.addTags(tags=",".join(image.keywords), photo_id=photo_id)
+
+
+            # Clear the update flag in IMatch. It doesn't matter that
+            # another PlatformController may have already done this because
+            # we pre-load all controllers before getting here. 
+            IMatchAPI().set_collections(
+                collection=IMatchImage.UPDATE_INDICATOR, 
+                filelist=image.id,
+                op = "remove")
+
             progress_counter += 1
 

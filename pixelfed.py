@@ -43,6 +43,7 @@ class PixelfedImage(IMatchImage):
 
     @property
     def is_valid(self) -> bool:
+        result = super().is_valid
         for attribute in ['title', 'description', 'headline']:
             try:
                 if getattr(self, attribute).strip() == '':
@@ -52,7 +53,7 @@ class PixelfedImage(IMatchImage):
         if self.size > PixelfedImage.__MAX_SIZE:
             logging.error(f'Skipping: {self.name} is too large to upload: {self.size/MB_SIZE:2.1f} MB. Max is {PixelfedImage.__MAX_SIZE/MB_SIZE:2.1f} MB.')
             self.errors.append(f"-- {self.size/MB_SIZE:2.1f} MB exceeds max {PixelfedImage.__MAX_SIZE/MB_SIZE:2.1f} MB.")
-        return len(self.errors) == 0
+        return len(self.errors) == 0 and result
 
     @property
     def is_on_platform(self) -> bool:
@@ -106,21 +107,22 @@ class PixelfedController(PlatformController):
             self._visibility = IMatchAPI.get_application_variable("pixelfed_visibility")
             self.api = pixelfed
 
-    def platform_add(self):
+    def add(self):
 
         if len(self.images_to_add) == 0:
-            return  #N Nothing to see here
+            return  # Nothing to see here
         
         self.connect()
 
         progress_counter = 1
         progress_end = len(self.images_to_add)
         for image in self.images_to_add:
+            image.prepare_for_upload()
             try:
                 # Prepare the image for attaching to the status. In Mastodon, "posts/toots" are all status
                 # Upload the media, then the status with the media attached. 
         
-                logging.info(f'pixelfed: Uploading ({progress_counter}/{progress_end}) "{image.title}" from "{image.filename}"')
+                logging.info(f'pixelfed: Adding ({progress_counter}/{progress_end}) "{image.title}" from "{image.filename}"')
                 media = self.api.media_post(  
                     media_file = image.filename,
                     description= image.headline
@@ -128,8 +130,8 @@ class PixelfedController(PlatformController):
 
                 # Create a new status with the uploaded image                   
                 status = self.api.status_post(
-                    status     = image.full_description,
-                    media_ids  = media, 
+                    status = image.full_description,
+                    media_ids = media, 
                     visibility = self._visibility
                 )
 
@@ -140,9 +142,6 @@ class PixelfedController(PlatformController):
                     'status_id' : status['id'],
                     'url' : status['url']
                     })
-
-                progress_counter += 1
-
             except KeyError:
                 logging.error("Missed validating an image field somewhere.")
                 sys.exit()
@@ -152,5 +151,91 @@ class PixelfedController(PlatformController):
             except Exception as e:
                 logging.error(f"An unexpected error occurred: {e}")
                 sys.exit()
+            progress_counter += 1
 
 
+    def delete(self):
+        if len(self.images_to_delete) == 0:
+            return  # Nothing to see here
+        
+        self.connect()
+
+        progress_counter = 1
+        progress_end = len(self.images_to_delete)
+        for image in self.images_to_delete:
+            try:
+                logging.info(f'pixelfed: Deleting ({progress_counter}/{progress_end}) "{image.title}" from "{image.filename}"')
+                attributes = IMatchAPI().get_attributes("pixelfed", image.id)
+                status_id = attributes[0]['data'][0]['status_id']
+
+                # Update the status with new text
+                status = self.api.status_delete(
+                    id = status_id,
+                )
+
+                # Clear the update flag in IMatch. It doesn't matter that
+                # another PlatformController may have already done this because
+                # we pre-load all controllers before getting here. 
+                IMatchAPI().set_collections(
+                    collection=IMatchImage.DELETE_INDICATOR, 
+                    filelist=image.id,
+                    op = "remove")
+            except KeyError:
+                logging.error("Missed validating an image field somewhere.")
+                sys.exit()
+            except mastodon.MastodonAPIError as mae:
+                logging.error(f"An API error occurred: {mae}.")
+                sys.exit()
+            except Exception as e:
+                logging.error(f"An unexpected error occurred: {e}")
+                sys.exit()
+            progress_counter += 1       
+        
+
+    def update(self):
+        if len(self.images_to_update) == 0:
+            return  # Nothing to see here
+        
+        self.connect()
+
+        progress_counter = 1
+        progress_end = len(self.images_to_update)
+        for image in self.images_to_update:
+            image.prepare_for_upload()
+            try:
+                # Prepare the image for attaching to the status. In Mastodon, "posts/toots" are all status
+                # Upload the media, then the status with the media attached. 
+                attributes = IMatchAPI().get_attributes("pixelfed", image.id)
+                media_id = attributes[0]['data'][0]['media_id']
+                status_id = attributes[0]['data'][0]['status_id']
+
+                logging.info(f'pixelfed: Updating ({progress_counter}/{progress_end}) "{image.title}" from "{image.filename}"')
+                media = self.api.media_update(
+                    id = media_id,  
+                    description= image.headline
+                )
+
+                # Update the status with new text
+                status = self.api.status_update(
+                    id = status_id,
+                    status = image.full_description,
+                    media_ids = media, 
+                )
+
+                # Clear the update flag in IMatch. It doesn't matter that
+                # another PlatformController may have already done this because
+                # we pre-load all controllers before getting here. 
+                IMatchAPI().set_collections(
+                    collection=IMatchImage.UPDATE_INDICATOR, 
+                    filelist=image.id,
+                    op = "remove")
+            except KeyError:
+                logging.error("Missed validating an image field somewhere.")
+                sys.exit()
+            except mastodon.MastodonAPIError as mae:
+                logging.error(f"An API error occurred: {mae}.")
+                sys.exit()
+            except Exception as e:
+                logging.error(f"An unexpected error occurred: {e}")
+                sys.exit()
+            progress_counter += 1       
