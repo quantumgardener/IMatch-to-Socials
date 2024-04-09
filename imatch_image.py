@@ -2,7 +2,7 @@ from IMatchAPI import IMatchAPI
 from pprint import pprint
 from datetime import datetime
 import logging
-logging.basicConfig(level=logging.INFO)
+
 logging.getLogger('urllib3').setLevel(logging.INFO) # Don't want this debug level to cloud ours
 
 MB_SIZE = 1048576
@@ -141,8 +141,9 @@ class IMatchImage():
     def add_keyword(self, keyword) -> str:
         """Ensure all keywords are added without spaces"""
         no_spaces_keyword = keyword.replace(" ","")
-        self.keywords.add(no_spaces_keyword)
-        return no_spaces_keyword
+        no_ampersand_keyword = no_spaces_keyword.replace("&","-and-")
+        self.keywords.add(no_ampersand_keyword)
+        return no_ampersand_keyword
     
     @property
     def is_master(self) -> bool:
@@ -212,10 +213,15 @@ class IMatchImage():
    
     @property
     def is_valid(self) -> bool:
+        for attribute in ['title', 'description']:
+            try:
+                if getattr(self, attribute).strip() == '':
+                    self.errors.append(f"-- missing '{attribute}'")
+            except AttributeError:
+                self.errors.append(f"-- missing '{attribute}'")
         if self.is_master:
             self.errors.append("Attemting to upload master image.")
-            return False
-        return True
+        return len(self.errors) == 0
 
     @property
     def controller(self):

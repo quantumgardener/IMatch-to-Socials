@@ -3,7 +3,6 @@ import json       # json library
 import requests   # See: http://docs.python-requests.org/en/master/
 from pprint import pprint
 import logging
-logging.basicConfig(level=logging.INFO)
 logging.getLogger('urllib3').setLevel(logging.INFO) # Don't want this debug level to cloud ours
 
 
@@ -75,7 +74,7 @@ class IMatchAPI:
             IMatchAPI.__host_url = f"http://127.0.0.1:{host_port}"
 
             try:
-                logging.info(f"IMatchAPI: Attempting connection to IMatch on port {host_port}")
+                logging.info(f"[IMatchAPI] Attempting connection to IMatch on port {host_port}")
                 req = requests.post(IMatchAPI.__host_url + '/v1/authenticate', params={
                     'id': os.getlogin(),
                     'password': '',
@@ -91,10 +90,10 @@ class IMatchAPI:
                     # Raise the exception matching the HTTP status code
                     req.raise_for_status()
 
-                logging.info(f"IMatchAPI: Authenticated to {IMatchAPI.__host_url}")
+                logging.info(f"[IMatchAPI] Authenticated to {IMatchAPI.__host_url}")
                 return
             except requests.exceptions.ConnectionError as ce:
-                logging.info(f"IMatchAPI: Unable to connect to IMatch on port {host_port}. Please check IMatch is running and the port is correct.\n\nThe full error was {ce}")
+                logging.info(f"[IMatchAPI] Unable to connect to IMatch on port {host_port}. Please check IMatch is running and the port is correct.\n\nThe full error was {ce}")
                 sys.exit()
             except requests.exceptions.RequestException as re:
                 print(re)

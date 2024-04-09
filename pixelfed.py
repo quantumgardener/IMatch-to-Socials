@@ -8,7 +8,7 @@ from IMatchAPI import IMatchAPI
 from pprint import pprint
 import sys
 import logging
-logging.basicConfig(level=logging.INFO)
+
 
 MB_SIZE = 1048576
 
@@ -19,6 +19,7 @@ class PixelfedImage(IMatchImage):
     def __init__(self, id) -> None:
         super().__init__(id)
         self.alt_text = None
+        self.logname = "pixelfed"
 
     def prepare_for_upload(self) -> None:
         """Build variables ready for uploading."""
@@ -44,15 +45,15 @@ class PixelfedImage(IMatchImage):
     @property
     def is_valid(self) -> bool:
         result = super().is_valid
-        for attribute in ['title', 'description', 'headline']:
+        for attribute in ['headline']:
             try:
                 if getattr(self, attribute).strip() == '':
-                    self.errors.append(f"-- missing '{attribute}'.")
+                    self.errors.append(f"-- missing '{attribute}'")
             except AttributeError:
-                self.errors.append(f"-- missing '{attribute}'.")
+                self.errors.append(f"-- missing '{attribute}'")
         if self.size > PixelfedImage.__MAX_SIZE:
             logging.error(f'Skipping: {self.name} is too large to upload: {self.size/MB_SIZE:2.1f} MB. Max is {PixelfedImage.__MAX_SIZE/MB_SIZE:2.1f} MB.')
-            self.errors.append(f"-- {self.size/MB_SIZE:2.1f} MB exceeds max {PixelfedImage.__MAX_SIZE/MB_SIZE:2.1f} MB.")
+            self.errors.append(f"-- {self.size/MB_SIZE:2.1f} MB exceeds max {PixelfedImage.__MAX_SIZE/MB_SIZE:2.1f} MB")
         return len(self.errors) == 0 and result
 
     @property
@@ -64,6 +65,7 @@ class PixelfedController(PlatformController):
     
     def __init__(self) -> None:
         super().__init__()
+        self.logname = "pixelfed"
 
     def connect(self):
         if self.api is not None:
@@ -72,30 +74,30 @@ class PixelfedController(PlatformController):
             # Create a Mastodon instance. Get secrets from IMatch
             # https://www.photools.com/help/imatch/index.html#var_basics.htm
             try:
-                logging.info("pixelfed: Connecting to platform.")
+                logging.info(f"{self.logname}: Connecting to platform.")
                 pixelfed = mastodon.Mastodon(
                     access_token = IMatchAPI.get_application_variable("pixelfed_token"),
                     api_base_url = IMatchAPI.get_application_variable("pixelfed_url")
                 )
             except mastodon.MastodonUnauthorizedError:
-                print('unuathorised')
+                logging.error(f"{self.logname} unauthorised for connection.")
                 sys.exit()
 
             # Fetch my account details. Serves as a good check of connection details
             # before bothering to upload images. If it fails here, nothing else will work.
             try:
-                logging.info("pixelfed: Verifying pixelfed account credentials.")
+                logging.info(f"{self.logname}: Verifying pixelfed account credentials.")
                 account = pixelfed.account_verify_credentials()
-                logging.info(f"pixelfed: Verified. Connected to {account['url']}.")
+                logging.info(f"{self.logname}: Verified. Connected to {account['url']}.")
             except mastodon.MastodonNetworkError as mne:
-                logging.error(f"pixelfed: Unable to obtain account details. Check URL {IMatchAPI.get_application_variable("pixelfed_url")}.")
+                logging.error(f"{self.logname}: Unable to obtain account details. Check URL {IMatchAPI.get_application_variable("pixelfed_url")}.")
                 print (mne)
                 sys.exit()
             except mastodon.MastodonAPIError:
-                logging.error("pixelfed: Unable to access credentials. Check token.")
+                logging.error(f"{self.logname}: Unable to access credentials. Check token.")
                 sys.exit()
             except Exception as e:
-                print(f"pixelfed: An unexpected error occurred: {e}")
+                print(f"{self.logname}: An unexpected error occurred: {e}")
                 sys.exit()
 
             ## Get the default visibility for posts. Can be one of:
@@ -122,7 +124,7 @@ class PixelfedController(PlatformController):
                 # Prepare the image for attaching to the status. In Mastodon, "posts/toots" are all status
                 # Upload the media, then the status with the media attached. 
         
-                logging.info(f'pixelfed: Adding ({progress_counter}/{progress_end}) "{image.title}" from "{image.filename}"')
+                logging.info(f'{self.logname}: Adding ({progress_counter}/{progress_end}) "{image.title}" from "{image.filename}"')
                 media = self.api.media_post(  
                     media_file = image.filename,
                     description= image.headline
@@ -143,13 +145,13 @@ class PixelfedController(PlatformController):
                     'url' : status['url']
                     })
             except KeyError:
-                logging.error("Missed validating an image field somewhere.")
+                logging.error(f"{self.logname}: Missed validating an image field somewhere.")
                 sys.exit()
             except mastodon.MastodonAPIError as mae:
-                logging.error(f"An API error occurred: {mae}.")
+                logging.error(f"{self.logname}: An API error occurred: {mae}.")
                 sys.exit()
             except Exception as e:
-                logging.error(f"An unexpected error occurred: {e}")
+                logging.error(f"{self.logname}: An unexpected error occurred: {e}")
                 sys.exit()
             progress_counter += 1
 
@@ -164,7 +166,7 @@ class PixelfedController(PlatformController):
         progress_end = len(self.images_to_delete)
         for image in self.images_to_delete:
             try:
-                logging.info(f'pixelfed: Deleting ({progress_counter}/{progress_end}) "{image.title}" from "{image.filename}"')
+                logging.info(f'{self.logname}: Deleting ({progress_counter}/{progress_end}) "{image.title}" from "{image.filename}"')
                 attributes = IMatchAPI().get_attributes("pixelfed", image.id)
                 status_id = attributes[0]['data'][0]['status_id']
 
@@ -181,13 +183,13 @@ class PixelfedController(PlatformController):
                     filelist=image.id,
                     op = "remove")
             except KeyError:
-                logging.error("Missed validating an image field somewhere.")
+                logging.error(f"{self.logname}: Missed validating an image field somewhere.")
                 sys.exit()
             except mastodon.MastodonAPIError as mae:
-                logging.error(f"An API error occurred: {mae}.")
+                logging.error(f"{self.logname}: An API error occurred: {mae}.")
                 sys.exit()
             except Exception as e:
-                logging.error(f"An unexpected error occurred: {e}")
+                logging.error(f"{self.logname}: An unexpected error occurred: {e}")
                 sys.exit()
             progress_counter += 1       
         
@@ -209,7 +211,7 @@ class PixelfedController(PlatformController):
                 media_id = attributes[0]['data'][0]['media_id']
                 status_id = attributes[0]['data'][0]['status_id']
 
-                logging.info(f'pixelfed: Updating ({progress_counter}/{progress_end}) "{image.title}" from "{image.filename}"')
+                logging.info(f'{self.logname}: Updating ({progress_counter}/{progress_end}) "{image.title}" from "{image.filename}"')
                 media = self.api.media_update(
                     id = media_id,  
                     description= image.headline
@@ -230,12 +232,13 @@ class PixelfedController(PlatformController):
                     filelist=image.id,
                     op = "remove")
             except KeyError:
-                logging.error("Missed validating an image field somewhere.")
+                logging.error(f"{self.logname}: validating an image field somewhere.")
                 sys.exit()
             except mastodon.MastodonAPIError as mae:
-                logging.error(f"An API error occurred: {mae}.")
+                logging.error(f"{self.logname}: API error occurred: {mae}.")
                 sys.exit()
             except Exception as e:
-                logging.error(f"An unexpected error occurred: {e}")
+                logging.error(f"{self.logname}: unexpected error occurred: {e}")
                 sys.exit()
             progress_counter += 1       
+

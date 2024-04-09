@@ -4,7 +4,10 @@ import pixelfed
 from pprint import pprint
 import sys
 import logging
-logging.basicConfig(level=logging.INFO)
+logging.basicConfig(
+    level = logging.INFO,
+    format = '%(levelname)8s | %(message)s'
+    )
 
 class Factory():
 
@@ -60,26 +63,36 @@ if __name__ == "__main__":
     
     # Gather all image information
     for platform in Factory.platforms.keys():
+        logging.info( "--------------------------------------------------------------------------------------")
         logging.info(f"{platform}: Gathering images from IMatch.")
         controllers[platform] = Factory.get_controller_class(platform)()
         for image_id in IMatchAPI().get_files_in_category(f"Socials|{platform}"):
             image = Factory.build_image(image_id, platform)
             controllers[platform].add_image(image)
         logging.info(f"{platform}: {controllers[platform].stats['total']} images gathered from IMatch.")
+
         controllers[platform].classify_images()
-
-
-    # Perform all image tasks. This allows us the necessary feature of being able to share pins etc.
-    # A single image can be on multiple platforms, and finishing an operation on one, then clearing it
-    # means the next platform will ignore the image altogether.
-    for platform in Factory.platforms.keys():
         controllers[platform].add()
         controllers[platform].update()
-        controllers[platform].delete()
+        #controllers[platform].delete()
+        controllers[platform].list_errors()
+        controllers[platform].summarise()
 
-    # Placeholder to display errors
-    logging.info(f"{platform}: Processing complete.")
-        
-    print("Done.")
+    stats = {}
+    for platform in Factory.platforms.keys():
+        platform_stats = controllers[platform].stats
+        for stat in platform_stats:
+            try:
+                stats[stat] += platform_stats[stat]
+            except KeyError:
+                stats[stat] = platform_stats[stat]
+            
+    logging.info( "--------------------------------------------------------------------------------------")
+    logging.info(f"Final summary of images processed")
+    for val in stats.keys():
+        logging.info(f"-- {stats[val]} {val} images")
+    
+    logging.info("--------------------------------------------------------------------------------------")
+    logging.info("Done.")
 
 

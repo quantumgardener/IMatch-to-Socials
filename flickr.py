@@ -6,7 +6,7 @@ from platform_base import PlatformController
 from pprint import pprint
 import sys
 import logging
-logging.basicConfig(level=logging.INFO)
+
 logging.getLogger("flickrapi.core").setLevel(logging.WARN)  # Hide basic info messages
 
 MB_SIZE = 1048576
@@ -19,7 +19,7 @@ class FlickrImage(IMatchImage):
         super().__init__(id)
 
         if self.size > FlickrImage.__MAX_SIZE:
-            logging.warning(f'{self.filename} may be too large to upload: {self.size/MB_SIZE:2.1f} MB. Max is {FlickrImage.__MAX_SIZE/MB_SIZE:2.1f} MB.')
+            logging.warning(f'{self.logname}: {self.filename} may be too large to upload: {self.size/MB_SIZE:2.1f} MB. Max is {FlickrImage.__MAX_SIZE/MB_SIZE:2.1f} MB.')
 
     def prepare_for_upload(self) -> None:
         """Build variables ready for uploading."""
@@ -63,15 +63,9 @@ class FlickrImage(IMatchImage):
     @property
     def is_valid(self) -> bool:
         result = super().is_valid
-        for attribute in ['title', 'description']:
-            try:
-                if getattr(self, attribute).strip() == '':
-                    self.errors.append(f"-- missing '{attribute}'.")
-            except AttributeError:
-                self.errors.append(f"-- missing '{attribute}'.")
         if self.size > FlickrImage.__MAX_SIZE:
             logging.error(f'Skipping: {self.name} is too large to upload: {self.size/MB_SIZE:2.1f} MB. Max is {FlickrImage.__MAX_SIZE/MB_SIZE:2.1f} MB.')
-            self.errors.append(f"-- {self.size/MB_SIZE:2.1f} MB exceeds max {FlickrImage.__MAX_SIZE/MB_SIZE:2.1f} MB.")
+            self.errors.append(f"-- {self.size/MB_SIZE:2.1f} MB exceeds max {FlickrImage.__MAX_SIZE/MB_SIZE:2.1f} MB")
         return len(self.errors) == 0 and result
 
     @property
@@ -83,6 +77,7 @@ class FlickrController(PlatformController):
 
     def __init__(self) -> None:
         super().__init__()
+        self.logname = "flickr"
         self.privacy = {
             'is_public' : IMatchAPI().get_application_variable("flickr_is_public"),
             'is_family' : IMatchAPI().get_application_variable('flickr_is_family'),
@@ -94,7 +89,7 @@ class FlickrController(PlatformController):
             return
         else:
             try:
-                logging.info("flickr: Connecting to platform.")
+                logging.info(f"{self.logname}: Connecting to platform.")
                 flickr = FlickrAPI(
                     IMatchAPI().get_application_variable("flickr_apikey"),
                     IMatchAPI().get_application_variable("flickr_apisecret"),
@@ -103,9 +98,9 @@ class FlickrController(PlatformController):
                 flickr.authenticate_via_browser(
                     perms = 'delete'
                     )
-                logging.info("flickr: Authenticated.")
+                logging.info(f"{self.logname}: Authenticated.")
             except Exception as ex:
-                logging.error(f"flickr: {ex}")
+                logging.error(f"{self.logname}: {ex}")
                 sys.exit()
             
             self.api = flickr
@@ -121,7 +116,7 @@ class FlickrController(PlatformController):
         progress_end = len(self.images_to_add)
         for image in self.images_to_add:
             image.prepare_for_upload()
-            logging.info(f"flickr: Adding {image.filename} ({image.size/MB_SIZE:2.1f} MB) ({progress_counter}/{progress_end})")
+            logging.info(f"{self.logname}: Adding {image.filename} ({image.size/MB_SIZE:2.1f} MB) ({progress_counter}/{progress_end})")
           
             response = self.api.upload(
                 image.filename,
@@ -176,7 +171,7 @@ class FlickrController(PlatformController):
         progress_counter = 1
         progress_end = len(self.images_to_delete)
         for image in self.images_to_delete:
-            logging.info(f'flickr: FAKE Deleting ({progress_counter}/{progress_end}) "{image.title}" from "{image.filename}"')
+            logging.info(f'{self.logname}: FAKE Deleting ({progress_counter}/{progress_end}) "{image.title}" from "{image.filename}"')
 
             IMatchAPI().set_collections(
                 collection=IMatchImage.DELETE_INDICATOR, 
@@ -194,7 +189,7 @@ class FlickrController(PlatformController):
         progress_end = len(self.images_to_update)
         for image in self.images_to_update:
             image.prepare_for_upload()
-            logging.info(f'flickr: Updating ({progress_counter}/{progress_end}) "{image.title}" from "{image.filename}"')
+            logging.info(f'{self.logname}: Updating ({progress_counter}/{progress_end}) "{image.title}" from "{image.filename}"')
 
             # response = self.api.upload(
             #     image.filename,
@@ -239,4 +234,3 @@ class FlickrController(PlatformController):
                 op = "remove")
 
             progress_counter += 1
-
