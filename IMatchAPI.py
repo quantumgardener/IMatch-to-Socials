@@ -179,6 +179,20 @@ class IMatchAPI:
         return results
 
     @classmethod
+    def get_file_categories(cls, filelist, params={}):
+        """ Return the categories for the list of files """
+
+        params['id'] = IMatchUtility().file_id_list(filelist)
+
+        response = cls.get_imatch( '/v1/files/categories', params)
+        results = {}
+        for file in response['files']:
+            logging.debug(file)
+            results[file['id']] = file['categories']
+        logging.debug(f"{len(results)} images with categories.")
+        return results
+        
+    @classmethod
     def get_files_in_category(cls, path):
         """ Return the requested information all files in the specified category """
 
@@ -195,20 +209,6 @@ class IMatchAPI:
             # Get straight to the data if present
             logging.debug(f"{len(response['categories'][0]['files'])} files found.")
             return response['categories'][0]['files']
-
-    @classmethod
-    def get_file_categories(cls, filelist, params={}):
-        """ Return the categories for the list of files """
-
-        params['id'] = IMatchUtility().file_id_list(filelist)
-
-        response = cls.get_imatch( '/v1/files/categories', params)
-        results = {}
-        for file in response['files']:
-            logging.debug(file)
-            results[file['id']] = file['categories']
-        logging.debug(f"{len(results)} images with categories.")
-        return results
 
     @classmethod
     def get_file_metadata(cls, filelist, params={}):

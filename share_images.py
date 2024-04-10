@@ -26,19 +26,17 @@ class Factory():
         pass
         
     @classmethod
-    def build_image(cls, id, platform):
-        
+    def build_image(cls, id, platform): 
         try:
-            return cls.platforms[platform]['image'](id)
+            return cls.platforms[platform.name]['image'](id, platform)
         except KeyError:
-            print(f"{cls.__name__}.build(platform): '{platform}' is an unrecognised platform. Valid options are {cls.platforms}.")
+            print(f"{cls.__name__}.build(platform): '{platform}' is an unrecognised platform. Valid options are {cls.platforms}xx.")
             sys.exit()
         
     @classmethod
-    def get_controller_class(cls, platform):
-
+    def build_controller(cls, platform):
         try:
-            return cls.platforms[platform]['controller']
+            return cls.platforms[platform]['controller'](platform)
         except KeyError:
             print(f"{cls.__name__}.build(platform): '{platform}' is an unrecognised platform. Valid options are {cls.platforms}.")
             sys.exit()
@@ -57,30 +55,31 @@ if __name__ == "__main__":
     ##pprint(IMatchAPI().get_imatch("v1/collections",params={'id' : 'all','fields':'id,path'}))
     
     images = []             # main image store
-    controllers = {}
+    platform_controllers = set()
 
     IMatchAPI()             # Perform initial connection
     
     # Gather all image information
     for platform in Factory.platforms.keys():
-        logging.info( "--------------------------------------------------------------------------------------")
-        logging.info(f"{platform}: Gathering images from IMatch.")
-        controllers[platform] = Factory.get_controller_class(platform)()
-        for image_id in IMatchAPI().get_files_in_category(f"Socials|{platform}"):
-            image = Factory.build_image(image_id, platform)
-            controllers[platform].add_image(image)
-        logging.info(f"{platform}: {controllers[platform].stats['total']} images gathered from IMatch.")
+        platform_controllers.add(Factory.build_controller(platform))
 
-        controllers[platform].classify_images()
-        controllers[platform].add()
-        controllers[platform].update()
-        #controllers[platform].delete()
-        controllers[platform].list_errors()
-        controllers[platform].summarise()
+    for controller in platform_controllers:
+        logging.info( "--------------------------------------------------------------------------------------")
+        logging.info(f"{controller.name}: Gathering images from IMatch.")
+        for image_id in IMatchAPI().get_files_in_category(f"Socials|{controller.name}"):
+            image = Factory.build_image(image_id, controller)
+        logging.info(f"{controller.name}: {controller.stats['total']} images gathered from IMatch.")
+
+        controller.classify_images()
+        controller.add()
+        controller.update()
+        controller.delete()
+        #controller.list_errors()
+        controller.summarise()
 
     stats = {}
-    for platform in Factory.platforms.keys():
-        platform_stats = controllers[platform].stats
+    for controller in platform_controllers:
+        platform_stats = controller.stats
         for stat in platform_stats:
             try:
                 stats[stat] += platform_stats[stat]

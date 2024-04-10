@@ -7,21 +7,26 @@ logging.getLogger('urllib3').setLevel(logging.INFO) # Don't want this debug leve
 
 MB_SIZE = 1048576
 
+def build_category(path_levels):
+    """Build a valid category path from a list of levels"""
+    return "|".join(path_levels)
+
 class IMatchImage():
 
-    UPDATE_INDICATOR = IMatchAPI.COLLECTION_PINS_GREEN
-    DELETE_INDICATOR = IMatchAPI.COLLECTION_PINS_RED
-    ERROR_INDICATOR = IMatchAPI.COLLECTION_DOTS_RED
+    UPDATE_INDICATOR = "_update"
+    DELETE_INDICATOR = "_delete"
+    ERROR_INDICATOR = IMatchAPI.COLLECTION_PINS_RED
     OP_INVALID = -1
     OP_NONE = 0
     OP_ADD = 1
     OP_UPDATE = 2
     OP_DELETE = 3
 
-    def __init__(self, id) -> None:
+    def __init__(self, id, controller) -> None:
         self.id = id
         self.errors = []    # hold any errors raised during the process
-        self._controller = None
+        self.controller = controller
+        self.controller.add_image(self)
         
         # -----------------------------------------------------------------------------
         # Now begins the process of collating the information to be posted alongside 
@@ -78,8 +83,10 @@ class IMatchImage():
             sys.exit()
         
         # Retrieve the list of categories the image belongs to.
-        self.categories = IMatchAPI().get_file_categories([self.id], params={'fields' : 'path,description'})[self.id]
-        
+        self.categories = IMatchAPI().get_file_categories([self.id], params={
+            'fields' : 'path,description'}
+            )[self.id]
+       
         # Set the operation for this file.
         self.operation = IMatchImage.OP_NONE
         if self.is_valid:
@@ -88,23 +95,23 @@ class IMatchImage():
             else:
                 # Check collections for overriding instructions
                 collections = IMatchAPI().file_collections(self.id)
-                if (IMatchImage.UPDATE_INDICATOR in collections) and (IMatchImage.DELETE_INDICATOR in collections):
+                if self.wants_update and self.wants_delete:
                     # We have conflicting instructions. 
-                    self.errors.append("Conflicting instructions. Both update and delete pins are set.")
+                    self.errors.append(f"Conflicting instructions. Images is in both {IMatchImage.DELETE_INDICATOR} and IMatchImage.UPDATE_INDICATOR categories.")
                     self.operation = IMatchImage.OP_INVALID
                 else:
-                    if IMatchImage.UPDATE_INDICATOR in collections:
+                    if self.wants_update:
                         self.operation = IMatchImage.OP_UPDATE
-                    if IMatchImage.DELETE_INDICATOR in collections:
+                    if self.wants_delete:
                         self.operation = IMatchImage.OP_DELETE
         else:
             self.operation = IMatchImage.OP_INVALID
 
     def __repr__(self) -> str:
-        return f"{type(self).__name__}(id: {self.id}, filename: {self.filename}, size: {self.size})"
+        return vars(self)
 
     def __str__(self) -> str:
-        return f"I'm a {type(self).__name__}"
+        return f"{type(self).__name__}(id: {self.id}, filename: {self.filename}, size: {self.size})"
        
     def prepare_for_upload(self) -> None:
         """Build variables ready for uploading."""
@@ -145,6 +152,20 @@ class IMatchImage():
         self.keywords.add(no_ampersand_keyword)
         return no_ampersand_keyword
     
+    def is_image_in_category(self, search_category) -> bool:
+        found = False
+        for category in self.categories:
+            if category['path'] == search_category:
+                found = True
+                break
+        return found
+
+    def list_errors(self) -> None:
+        print(f"Errors were found with {type(self).__name__}(name: {self.name}). Please update the master file's metadata.")
+        IMatchAPI().set_collections(IMatchAPI.COLLECTION_PINS_RED, self.id)
+        for error in self.errors:
+            print(error)
+
     @property
     def is_master(self) -> bool:
         return self.id == self.master_id
@@ -153,12 +174,6 @@ class IMatchImage():
     def is_version(self) -> bool:
         return not self.is_master()
     
-    def list_errors(self) -> None:
-        print(f"Errors were found with {type(self).__name__}(name: {self.name}). Please update the master file's metadata.")
-        IMatchAPI().set_collections(IMatchAPI.COLLECTION_PINS_RED, self.id)
-        for error in self.errors:
-            print(error)
-
     @property
     def is_on_platform(self) -> bool:
         raise NotImplementedError("Subclasses must implement is_on_platform()")
@@ -233,6 +248,27 @@ class IMatchImage():
     @controller.setter
     def controller(self, controller):
         self._controller = controller
+
+    @property
+    def wants_delete(self) -> bool:
+        return self.is_image_in_category(
+            build_category([
+                "Socials",
+                self._controller.name,
+                IMatchImage.DELETE_INDICATOR
+                ])
+            )
+
+    @property
+    def wants_update(self) -> bool:
+        return self.is_image_in_category(
+            build_category([
+                "Socials",
+                self._controller.name,
+                IMatchImage.UPDATE_INDICATOR
+                ])
+            )
+
         
         
         

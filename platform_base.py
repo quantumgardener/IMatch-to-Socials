@@ -5,14 +5,14 @@ import logging
 
 class PlatformController():
 
-    def __init__(self) -> None:
+    def __init__(self, platform) -> None:
         self.images = set()
         self.images_to_add = set()
         self.images_to_delete = set()
         self.images_to_update = set()
         self.invalid_images = set()
         self.api = None  # Holds the platform api connection once active
-        self.logname = "x"
+        self.name = platform
 
     def connect(self):
         """Upload and add image to platform"""
@@ -48,7 +48,7 @@ class PlatformController():
         """List information about all images that are invalid and were not processed"""
         if len(self.invalid_images) > 0:
             logging.error( "--------------------------------------------------------------------------------------")
-            logging.error(f"{self.logname}: The following images had errors are were tagged invalid for processing.")
+            logging.error(f"{self.name}: The following images had errors are were tagged invalid for processing.")
             for image in sorted(self.invalid_images, key=lambda x: x.name):
                 logging.error(image.name)
                 for error in image.errors:
@@ -58,7 +58,7 @@ class PlatformController():
         """Output summary of images processed"""
         stats = self.stats
         logging.info( "--------------------------------------------------------------------------------------")
-        logging.info(f"{self.logname}: Summary of images processed")
+        logging.info(f"{self.name}: Summary of images processed")
         for val in stats.keys():
             logging.info(f"-- {stats[val]} {val} images")
 

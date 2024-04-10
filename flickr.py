@@ -10,16 +10,17 @@ import logging
 logging.getLogger("flickrapi.core").setLevel(logging.WARN)  # Hide basic info messages
 
 MB_SIZE = 1048576
+TESTING = True
 
 class FlickrImage(IMatchImage):
 
     __MAX_SIZE = 200 * MB_SIZE
 
-    def __init__(self, id) -> None:
-        super().__init__(id)
+    def __init__(self, id, platform) -> None:
+        super().__init__(id, platform)
 
         if self.size > FlickrImage.__MAX_SIZE:
-            logging.warning(f'{self.logname}: {self.filename} may be too large to upload: {self.size/MB_SIZE:2.1f} MB. Max is {FlickrImage.__MAX_SIZE/MB_SIZE:2.1f} MB.')
+            logging.warning(f'{self.name}: {self.filename} may be too large to upload: {self.size/MB_SIZE:2.1f} MB. Max is {FlickrImage.__MAX_SIZE/MB_SIZE:2.1f} MB.')
 
     def prepare_for_upload(self) -> None:
         """Build variables ready for uploading."""
@@ -75,9 +76,8 @@ class FlickrImage(IMatchImage):
     
 class FlickrController(PlatformController):
 
-    def __init__(self) -> None:
-        super().__init__()
-        self.logname = "flickr"
+    def __init__(self, platform) -> None:
+        super().__init__(platform)
         self.privacy = {
             'is_public' : IMatchAPI().get_application_variable("flickr_is_public"),
             'is_family' : IMatchAPI().get_application_variable('flickr_is_family'),
@@ -89,7 +89,7 @@ class FlickrController(PlatformController):
             return
         else:
             try:
-                logging.info(f"{self.logname}: Connecting to platform.")
+                logging.info(f"{self.name}: Connecting to platform.")
                 flickr = FlickrAPI(
                     IMatchAPI().get_application_variable("flickr_apikey"),
                     IMatchAPI().get_application_variable("flickr_apisecret"),
@@ -98,9 +98,9 @@ class FlickrController(PlatformController):
                 flickr.authenticate_via_browser(
                     perms = 'delete'
                     )
-                logging.info(f"{self.logname}: Authenticated.")
+                logging.info(f"{self.name}: Authenticated.")
             except Exception as ex:
-                logging.error(f"{self.logname}: {ex}")
+                logging.error(f"{self.name}: {ex}")
                 sys.exit()
             
             self.api = flickr
@@ -109,14 +109,18 @@ class FlickrController(PlatformController):
     def add(self):
         if len(self.images_to_add) == 0:
             return  # Nothing to see here
-        
-        self.connect()
+
+        if not TESTING:        
+            self.connect()
 
         progress_counter = 1
         progress_end = len(self.images_to_add)
         for image in self.images_to_add:
             image.prepare_for_upload()
-            logging.info(f"{self.logname}: Adding {image.filename} ({image.size/MB_SIZE:2.1f} MB) ({progress_counter}/{progress_end})")
+            if TESTING:
+                logging.info(f"{self.name}: **TEST** Adding {image.filename} ({image.size/MB_SIZE:2.1f} MB) ({progress_counter}/{progress_end})")
+                break    
+            logging.info(f"{self.name}: Adding {image.filename} ({image.size/MB_SIZE:2.1f} MB) ({progress_counter}/{progress_end})")
           
             response = self.api.upload(
                 image.filename,
@@ -166,30 +170,38 @@ class FlickrController(PlatformController):
         if len(self.images_to_delete) == 0:
             return  # Nothing to see here
         
-        self.connect()
+        if not TESTING:
+            self.connect()
 
         progress_counter = 1
         progress_end = len(self.images_to_delete)
         for image in self.images_to_delete:
-            logging.info(f'{self.logname}: FAKE Deleting ({progress_counter}/{progress_end}) "{image.title}" from "{image.filename}"')
+            if TESTING:
+                logging.info(f'{self.name}: **TEST** Deleting ({progress_counter}/{progress_end}) "{image.title}" from "{image.filename}"')
+                break    
+            logging.info(f'{self.name}: FAKE Deleting ({progress_counter}/{progress_end}) "{image.title}" from "{image.filename}"')
 
-            IMatchAPI().set_collections(
-                collection=IMatchImage.DELETE_INDICATOR, 
-                filelist=image.id,
-                op = "remove")
+            # IMatchAPI().set_collections(
+            #     collection=IMatchImage.DELETE_INDICATOR, 
+            #     filelist=image.id,
+            #     op = "remove")
             progress_counter += 1        
 
     def update(self):
         if len(self.images_to_update) == 0:
             return  # Nothing to see here
         
-        self.connect()
+        if not TESTING:
+            self.connect()
 
         progress_counter = 1
         progress_end = len(self.images_to_update)
         for image in self.images_to_update:
             image.prepare_for_upload()
-            logging.info(f'{self.logname}: Updating ({progress_counter}/{progress_end}) "{image.title}" from "{image.filename}"')
+            if TESTING:
+                logging.info(f'{self.name}: **TEST** Updating ({progress_counter}/{progress_end}) "{image.title}" from "{image.filename}"')
+                break
+            logging.info(f'{self.name}: Updating ({progress_counter}/{progress_end}) "{image.title}" from "{image.filename}"')
 
             # response = self.api.upload(
             #     image.filename,
@@ -224,13 +236,9 @@ class FlickrController(PlatformController):
             # # Now add back the "Approved" tags. If added on upload, they combine with IPTC weirdly
             # resp = self.api.photos.addTags(tags=",".join(image.keywords), photo_id=photo_id)
 
-
-            # Clear the update flag in IMatch. It doesn't matter that
-            # another PlatformController may have already done this because
-            # we pre-load all controllers before getting here. 
-            IMatchAPI().set_collections(
-                collection=IMatchImage.UPDATE_INDICATOR, 
-                filelist=image.id,
-                op = "remove")
+            # IMatchAPI().set_collections(
+            #     collection=IMatchImage.UPDATE_INDICATOR, 
+            #     filelist=image.id,
+            #     op = "remove")
 
             progress_counter += 1
