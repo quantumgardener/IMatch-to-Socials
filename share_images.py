@@ -1,9 +1,10 @@
+import sys
+import logging
+
 from IMatchAPI import IMatchAPI
 import flickr
 import pixelfed
-from pprint import pprint
-import sys
-import logging
+
 logging.basicConfig(
     level = logging.INFO,
     format = '%(levelname)8s | %(message)s'

@@ -1,16 +1,16 @@
 from datetime import datetime
+import sys
+import logging
+
 from flickrapi import FlickrAPI
 from imatch_image import IMatchImage
 from IMatchAPI import IMatchAPI
 from platform_base import PlatformController
-from pprint import pprint
-import sys
-import logging
+import config
 
 logging.getLogger("flickrapi.core").setLevel(logging.WARN)  # Hide basic info messages
 
 MB_SIZE = 1048576
-TESTING = True
 
 class FlickrImage(IMatchImage):
 
@@ -110,14 +110,14 @@ class FlickrController(PlatformController):
         if len(self.images_to_add) == 0:
             return  # Nothing to see here
 
-        if not TESTING:        
+        if not config.TESTING:        
             self.connect()
 
         progress_counter = 1
         progress_end = len(self.images_to_add)
         for image in self.images_to_add:
             image.prepare_for_upload()
-            if TESTING:
+            if config.TESTING:
                 logging.info(f"{self.name}: **TEST** Adding {image.filename} ({image.size/MB_SIZE:2.1f} MB) ({progress_counter}/{progress_end})")
                 break    
             logging.info(f"{self.name}: Adding {image.filename} ({image.size/MB_SIZE:2.1f} MB) ({progress_counter}/{progress_end})")
@@ -170,13 +170,13 @@ class FlickrController(PlatformController):
         if len(self.images_to_delete) == 0:
             return  # Nothing to see here
         
-        if not TESTING:
+        if not config.TESTING:
             self.connect()
 
         progress_counter = 1
         progress_end = len(self.images_to_delete)
         for image in self.images_to_delete:
-            if TESTING:
+            if config.TESTING:
                 logging.info(f'{self.name}: **TEST** Deleting ({progress_counter}/{progress_end}) "{image.title}" from "{image.filename}"')
                 break    
             logging.info(f'{self.name}: FAKE Deleting ({progress_counter}/{progress_end}) "{image.title}" from "{image.filename}"')
@@ -191,14 +191,14 @@ class FlickrController(PlatformController):
         if len(self.images_to_update) == 0:
             return  # Nothing to see here
         
-        if not TESTING:
+        if not config.TESTING:
             self.connect()
 
         progress_counter = 1
         progress_end = len(self.images_to_update)
         for image in self.images_to_update:
             image.prepare_for_upload()
-            if TESTING:
+            if config.TESTING:
                 logging.info(f'{self.name}: **TEST** Updating ({progress_counter}/{progress_end}) "{image.title}" from "{image.filename}"')
                 break
             logging.info(f'{self.name}: Updating ({progress_counter}/{progress_end}) "{image.title}" from "{image.filename}"')

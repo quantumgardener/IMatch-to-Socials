@@ -1,17 +1,17 @@
 ## Pre-requisites
 # pip3 install Mastodon.py
-
-from imatch_image import IMatchImage
-from platform_base import PlatformController
-import mastodon
-from IMatchAPI import IMatchAPI
-from pprint import pprint
 import sys
 import logging
 
+import mastodon
+
+from imatch_image import IMatchImage
+from platform_base import PlatformController
+from IMatchAPI import IMatchAPI
+import config
+
 
 MB_SIZE = 1048576
-TESTING = False
 
 class PixelfedImage(IMatchImage):
 
@@ -113,11 +113,11 @@ class PixelfedController(PlatformController):
         if len(self.images_to_add) == 0:
             return  # Nothing to see here
         
-        if TESTING:
+        if config.TESTING:
             logging.info(f'{self.name}: (TEST) Adding "{image.title}"')
             return
         
-        if not TESTING:        
+        if not config.TESTING:        
             self.connect()
 
         progress_counter = 1
@@ -127,10 +127,10 @@ class PixelfedController(PlatformController):
             try:
                 # Prepare the image for attaching to the status. In Mastodon, "posts/toots" are all status
                 # Upload the media, then the status with the media attached. 
-                if TESTING:
+                if config.TESTING:
                     logging.info(f"{self.name}: **TEST** Adding {image.filename} ({image.size/MB_SIZE:2.1f} MB) ({progress_counter}/{progress_end})")
                     break                            
-                logging.info(f'{self.name}: Adding ({progress_counter}/{progress_end}) "{image.title}" from "{image.filename}"')
+                logging.info(f'{self.name}: Adding {image.filename} ({image.size/MB_SIZE:2.1f} MB) ({progress_counter}/{progress_end})')
                 media = self.api.media_post(  
                     media_file = image.filename,
                     description= image.headline
@@ -166,7 +166,7 @@ class PixelfedController(PlatformController):
         if len(self.images_to_delete) == 0:
             return  # Nothing to see here
         
-        if not TESTING:
+        if not config.TESTING:
             self.connect()
 
         progress_counter = 1
@@ -175,7 +175,7 @@ class PixelfedController(PlatformController):
             try:
                 attributes = IMatchAPI().get_attributes("pixelfed", image.id)
                 status_id = attributes[0]['data'][0]['status_id']
-                if TESTING:
+                if config.TESTING:
                     logging.info(f'{self.name}: **TEST** Deleting ({progress_counter}/{progress_end}) "{image.title}" status id: {status_id}')
                     break    
                 logging.info(f'{self.name}: Deleting ({progress_counter}/{progress_end}) "{image.title}" status id: {status_id}')
@@ -207,7 +207,7 @@ class PixelfedController(PlatformController):
         if len(self.images_to_update) == 0:
             return  # Nothing to see here
         
-        if not TESTING:
+        if not config.TESTING:
             self.connect()
 
         progress_counter = 1
@@ -222,7 +222,7 @@ class PixelfedController(PlatformController):
                 attributes = IMatchAPI().get_attributes("pixelfed", image.id)
                 media_id = attributes[0]['data'][0]['media_id']
                 status_id = attributes[0]['data'][0]['status_id']
-                if TESTING:
+                if config.TESTING:
                     logging.info(f'{self.name}: **TEST** Updating ({progress_counter}/{progress_end}) "{image.title}" status_id: {status_id}')
                     break
                 logging.info(f'{self.name}: Updating ({progress_counter}/{progress_end}) "{image.title}" status_id: {status_id}')

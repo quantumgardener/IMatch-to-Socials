@@ -1,7 +1,6 @@
-from imatch_image import IMatchImage
-from pprint import pprint
 import logging
 
+from imatch_image import IMatchImage
 
 class PlatformController():
 

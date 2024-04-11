@@ -1,7 +1,7 @@
-from IMatchAPI import IMatchAPI
-from pprint import pprint
 from datetime import datetime
 import logging
+
+from IMatchAPI import IMatchAPI
 
 logging.getLogger('urllib3').setLevel(logging.INFO) # Don't want this debug level to cloud ours
 
