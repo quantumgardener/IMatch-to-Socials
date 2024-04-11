@@ -1,9 +1,11 @@
 import sys
 import logging
 
-from IMatchAPI import IMatchAPI
+import config
 import flickr
+import IMatchAPI as im
 import pixelfed
+
 
 logging.basicConfig(
     level = logging.INFO,
@@ -53,12 +55,12 @@ if __name__ == "__main__":
     # platforms. Within IMatch, files are in the Socials|{platform} category
     # or subcategories.
 
-    ##pprint(IMatchAPI().get_imatch("v1/collections",params={'id' : 'all','fields':'id,path'}))
+    ##pprint(IMatchAPI.get_imatch("v1/collections",params={'id' : 'all','fields':'id,path'}))
     
     images = []             # main image store
     platform_controllers = set()
 
-    IMatchAPI()             # Perform initial connection
+    im.IMatchAPI()             # Perform initial connection
     
     # Gather all image information
     for platform in Factory.platforms.keys():
@@ -67,14 +69,14 @@ if __name__ == "__main__":
     for controller in platform_controllers:
         logging.info( "--------------------------------------------------------------------------------------")
         logging.info(f"{controller.name}: Gathering images from IMatch.")
-        for image_id in IMatchAPI().get_files_in_category(f"Socials|{controller.name}"):
+        for image_id in im.IMatchAPI.get_files_in_category(im.IMatchUtility.build_category([config.ROOT_CATEGORY,controller.name])):
             image = Factory.build_image(image_id, controller)
         logging.info(f"{controller.name}: {controller.stats['total']} images gathered from IMatch.")
 
         controller.classify_images()
-        controller.add()
-        controller.update()
-        controller.delete()
+        controller.add_images()
+        controller.update_images()
+        controller.delete_images()
         #controller.list_errors()
         controller.summarise()
 

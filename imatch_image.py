@@ -1,21 +1,15 @@
 from datetime import datetime
 import logging
 
-from IMatchAPI import IMatchAPI
+import IMatchAPI as im
+import config
 
 logging.getLogger('urllib3').setLevel(logging.INFO) # Don't want this debug level to cloud ours
 
-MB_SIZE = 1048576
-
-def build_category(path_levels):
-    """Build a valid category path from a list of levels"""
-    return "|".join(path_levels)
 
 class IMatchImage():
 
-    UPDATE_INDICATOR = "_update"
-    DELETE_INDICATOR = "_delete"
-    ERROR_INDICATOR = IMatchAPI.COLLECTION_PINS_RED
+    ERROR_INDICATOR = im.IMatchAPI.COLLECTION_PINS_RED
     OP_INVALID = -1
     OP_NONE = 0
     OP_ADD = 1
@@ -26,7 +20,7 @@ class IMatchImage():
         self.id = id
         self.errors = []    # hold any errors raised during the process
         self.controller = controller
-        self.controller.add_image(self)
+        self.controller.register_image(self)
         
         # -----------------------------------------------------------------------------
         # Now begins the process of collating the information to be posted alongside 
@@ -38,7 +32,7 @@ class IMatchImage():
             "fields"           : "datetime,filename,name,size",
             }
         
-        image_info = IMatchAPI().get_file_metadata([self.id], params=params)[0]
+        image_info = im.IMatchAPI.get_file_metadata([self.id], params=params)[0]
         try:
             for attribute in image_info.keys():
                 # fileName is a special case. Ask for filename, get fileName in results
@@ -70,11 +64,11 @@ class IMatchImage():
             "varshutter_speed" : "{File.MD.shutterspeed|value:formatted}"   
             }
 
-        self.master_id = IMatchAPI().get_master_id(self.id)
+        self.master_id = im.IMatchAPI.get_master_id(self.id)
         if self.master_id == None:
             # We are the master, use original id
             self.master_id = id
-        image_info = IMatchAPI().get_file_metadata([self.master_id],master_params)[0]
+        image_info = im.IMatchAPI.get_file_metadata([self.master_id],master_params)[0]
         try:
             for attribute in image_info.keys():
                 setattr(self, attribute, image_info[attribute])  # remove prefix for our purposes
@@ -83,7 +77,7 @@ class IMatchImage():
             sys.exit()
         
         # Retrieve the list of categories the image belongs to.
-        self.categories = IMatchAPI().get_file_categories([self.id], params={
+        self.categories = im.IMatchAPI.get_file_categories([self.id], params={
             'fields' : 'path,description'}
             )[self.id]
        
@@ -94,10 +88,10 @@ class IMatchImage():
                 self.operation = IMatchImage.OP_ADD
             else:
                 # Check collections for overriding instructions
-                collections = IMatchAPI().file_collections(self.id)
+                collections = im.IMatchAPI.file_collections(self.id)
                 if self.wants_update and self.wants_delete:
                     # We have conflicting instructions. 
-                    self.errors.append(f"Conflicting instructions. Images is in both {IMatchImage.DELETE_INDICATOR} and IMatchImage.UPDATE_INDICATOR categories.")
+                    self.errors.append(f"Conflicting instructions. Images is in both {IMatchImage.config.DELETE_CATEGORY} and IMatchImage.config.UPDATE_CATEGORY categories.")
                     self.operation = IMatchImage.OP_INVALID
                 else:
                     if self.wants_update:
@@ -162,7 +156,7 @@ class IMatchImage():
 
     def list_errors(self) -> None:
         print(f"Errors were found with {type(self).__name__}(name: {self.name}). Please update the master file's metadata.")
-        IMatchAPI().set_collections(IMatchAPI.COLLECTION_PINS_RED, self.id)
+        im.IMatchAPI.set_collections(IMatchAPI.COLLECTION_PINS_RED, self.id)
         for error in self.errors:
             print(error)
 
@@ -252,20 +246,20 @@ class IMatchImage():
     @property
     def wants_delete(self) -> bool:
         return self.is_image_in_category(
-            build_category([
-                "Socials",
+            im.IMatchUtility.build_category([
+                config.ROOT_CATEGORY,
                 self._controller.name,
-                IMatchImage.DELETE_INDICATOR
+                config.DELETE_CATEGORY
                 ])
             )
 
     @property
     def wants_update(self) -> bool:
         return self.is_image_in_category(
-            build_category([
-                "Socials",
+            im.IMatchUtility.build_category([
+                config.ROOT_CATEGORY,
                 self._controller.name,
-                IMatchImage.UPDATE_INDICATOR
+                config.UPDATE_CATEGORY
                 ])
             )
 

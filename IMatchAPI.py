@@ -3,11 +3,16 @@ import json       # json library
 import requests   # See: http://docs.python-requests.org/en/master/
 from pprint import pprint
 import logging
+import sys
 logging.getLogger('urllib3').setLevel(logging.INFO) # Don't want this debug level to cloud ours
-
 
 ## Utility class to make the main IMatchAPI class a little less complex
 class IMatchUtility:
+
+    @classmethod
+    def build_category(cls, path_levels):
+        """Build a valid category path from a list of levels"""
+        return "|".join(path_levels)
 
     @classmethod
     def file_id_list(cls, fileids):
@@ -114,7 +119,7 @@ class IMatchAPI:
             endpoint = "/" + endpoint
 
         try:
-            req = requests.get(IMatchAPI.__host_url + endpoint, params, timeout=cls.REQUEST_TIMEOUT)
+            req = requests.get(cls.__host_url + endpoint, params, timeout=cls.REQUEST_TIMEOUT)
             response = json.loads(req.text)
             if req.status_code == requests.codes.ok:
                 return response
@@ -353,4 +358,27 @@ class IMatchAPI:
                 return
         else:
             print("There was an error updating the collection. Please see message above.")
+            sys.exit()
+
+    @classmethod
+    def unassign_category(cls, category, filelist):
+        """ Set collections for files."""
+        params = {}
+        params['path'] = category
+
+        if isinstance(filelist, list):
+            params['fileidlist'] = IMatchUtility().file_id_list(filelist)
+        else:
+            if isinstance(filelist, int):
+                params['fileid'] = f"{filelist}"
+            else:
+                raise TypeError("Filelist argument must be single integer or list of integers.")      
+            
+        response = cls.post_imatch( '/v1/categories/unassign', params)
+        if response is not None:
+            if response['result'] == "ok":
+                logging.debug("Success")
+                return
+        else:
+            print("There was an error removing images from the category. Please see message above.")
             sys.exit()
