@@ -82,35 +82,30 @@ class PlatformController():
         if not config.TESTING:
             self.connect()
 
+        deleted_images = set()
         progress_counter = 1
         progress_end = len(self.images_to_delete)
         for image in self.images_to_delete:
             if config.TESTING:
-                logging.info(f'{self.name}: **TEST** Deleting ({progress_counter}/{progress_end}) "{image.title}"')
-                im.IMatchAPI.unassign_category(
-                im.IMatchUtility.build_category([
-                    config.ROOT_CATEGORY,
-                    self.name,
-                    config.DELETE_CATEGORY
-                    ]), 
-                image.id
-                )
-                logging.error(f"{self.name}: Need to clear attributes")
+                logging.info(f'{self.name}: **Test** Deleting ({progress_counter}/{progress_end}) "{image.title}"')
                 progress_counter += 1       
-                continue    
+                #continue    
             logging.info(f'{self.name}: Deleting ({progress_counter}/{progress_end}) "{image.title}"')
 
             self.commit_delete(image)
-            im.IMatchAPI.unassign_category(
-                im.IMatchUtility.build_category([
-                    config.ROOT_CATEGORY,
-                    self.name,
-                    config.DELETE_CATEGORY
-                    ]), 
-                image.id
-                )
-            logging.error(f"{self.name}: Need to clear attributes")
+            deleted_images.add(image.id)
             progress_counter += 1       
+
+        # Unassign all deleted images from the deleted category
+        im.IMatchAPI.unassign_category(
+            im.IMatchUtility.build_category([
+                config.ROOT_CATEGORY,
+                self.name,
+                config.DELETE_CATEGORY
+                ]), 
+            list(deleted_images)
+            )
+        im.IMatchAPI.delete_attributes(self.name,list(deleted_images))
 
     def list_errors(self):
         """List information about all images that are invalid and were not processed"""

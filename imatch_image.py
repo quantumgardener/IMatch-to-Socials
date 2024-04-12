@@ -80,7 +80,7 @@ class IMatchImage():
         self.categories = im.IMatchAPI.get_file_categories([self.id], params={
             'fields' : 'path,description'}
             )[self.id]
-       
+        
         # Set the operation for this file.
         self.operation = IMatchImage.OP_NONE
         if self.is_valid:
@@ -88,7 +88,6 @@ class IMatchImage():
                 self.operation = IMatchImage.OP_ADD
             else:
                 # Check collections for overriding instructions
-                collections = im.IMatchAPI.file_collections(self.id)
                 if self.wants_update and self.wants_delete:
                     # We have conflicting instructions. 
                     self.errors.append(f"Conflicting instructions. Images is in both {IMatchImage.config.DELETE_CATEGORY} and IMatchImage.config.UPDATE_CATEGORY categories.")

@@ -73,8 +73,8 @@ class PixelfedController(PlatformController):
             try:
                 logging.info(f"{self.name}: Connecting to platform.")
                 pixelfed = mastodon.Mastodon(
-                    access_token = IMatchAPI.get_application_variable("pixelfed_token"),
-                    api_base_url = IMatchAPI.get_application_variable("pixelfed_url")
+                    access_token = im.IMatchAPI.get_application_variable("pixelfed_token"),
+                    api_base_url = im.IMatchAPI.get_application_variable("pixelfed_url")
                 )
             except mastodon.MastodonUnauthorizedError:
                 logging.error(f"{self.name} unauthorised for connection.")
@@ -103,7 +103,7 @@ class PixelfedController(PlatformController):
             # private = Visible to followers only, and to any mentioned users.
             # direct = Visible only to mentioned users.
 
-            self._visibility = IMatchAPI.get_application_variable("pixelfed_visibility")
+            self._visibility = im.IMatchAPI.get_application_variable("pixelfed_visibility")
             self.api = pixelfed
 
     def commit_add(self, image):
@@ -124,7 +124,8 @@ class PixelfedController(PlatformController):
             )
 
             #Update the image in IMatch by adding the attributes below.
-            im.IMatchAIP().set_attributes("pixelfed", image.id, data = {
+            x = image.id
+            im.IMatchAPI().set_attributes("pixelfed", x, data = {
                 'posted' : status['created_at'].isoformat()[:10],
                 'media_id' : media['id'],
                 'status_id' : status['id'],
@@ -143,14 +144,14 @@ class PixelfedController(PlatformController):
     def commit_delete(self, image):
         """Make the api call to delete the image from the platform"""
         try:
-            attributes = im.IMatchAIP().get_attributes("pixelfed", image.id)
-            status_id = attributes[0]['data'][0]['status_id']
+            attributes = im.IMatchAPI().get_attributes("pixelfed", image.id)[0]
+            status_id = attributes['status_id']
 
             # Update the status with new text
             status = self.api.status_delete(
                 id = status_id,
             )
-
+            print(status)
         except KeyError:
             logging.error(f"{self.name}: Missed validating an image field somewhere.")
             sys.exit()
@@ -161,12 +162,12 @@ class PixelfedController(PlatformController):
             logging.error(f"{self.name}: An unexpected error occurred: {e}")
             sys.exit()
 
-    def commit_update(self, iamge):
+    def commit_update(self, image):
         """Make the api call to update the image on the platform"""
         try:
-            attributes = im.IMatchAIP().get_attributes("pixelfed", image.id)
-            media_id = attributes[0]['data'][0]['media_id']
-            status_id = attributes[0]['data'][0]['status_id']
+            attributes = im.IMatchAPI().get_attributes("pixelfed", image.id)[0]
+            media_id = attributes['media_id']
+            status_id = attributes['status_id']
 
             media = self.api.media_update(
                 id = media_id,  
@@ -179,13 +180,12 @@ class PixelfedController(PlatformController):
                 status = image.full_description,
                 media_ids = media, 
             )
-
+            print(status)
         except KeyError:
             logging.error(f"{self.name}: validating an image field somewhere.")
             sys.exit()
         except mastodon.MastodonAPIError as mae:
             logging.error(f"{self.name}: API error occurred: {mae}.")
-            sys.exit()
         except Exception as e:
             logging.error(f"{self.name}: unexpected error occurred: {e}")
             sys.exit()

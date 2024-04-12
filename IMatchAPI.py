@@ -14,20 +14,29 @@ class IMatchUtility:
         """Build a valid category path from a list of levels"""
         return "|".join(path_levels)
 
-    @classmethod
-    def file_id_list(cls, fileids):
-        """ Turn a list of file id numbers into a string for passing to a function """
-        return ",".join(map(str, fileids))
-
     @classmethod       
     def getID(cls, x):
-        """ Pull the file id from a {} record where ID is a field"""
+        """Pull the file id from a {} record where ID is a field"""
         return x['id']
 
     @classmethod
     def listIDs(cls, x):
-        """ Given a list of items where one record in the field is ID, return the list of IDs"""
+        """Given a list of items where one record in the field is ID, return the list of IDs"""
         return list(map(cls.getID, x))
+    
+    @classmethod
+    def prepare_filelist(cls, filelist):
+        """Accept an array of image ids, or a single id and format for an IMmatchAPI call"""
+        if isinstance(filelist, list):
+            return ",".join(map(str, filelist))
+        else:
+            return f"{filelist}"
+            # isinstance failing to detect int when all else says it is. So now we just assume.
+            if isinstance(filelist,int):
+                f"{filelist}"
+                return f"{filelist}"
+            else:
+                raise TypeError("Filelist argument must be single integer or list of integers.")      
     
 
 class IMatchAPI:
@@ -157,6 +166,32 @@ class IMatchAPI:
             print(ex)
 
     @classmethod
+    def delete_attributes(cls, set, filelist, params={}, data={}):
+        """ Delete attributes for image with id. Assumes attributes only exist once.
+         (modification required if multiple instances of attribute sets are to be managed) """
+
+        params['set'] = set
+        params['id'] = IMatchUtility().prepare_filelist(filelist)
+
+        tasks = [{
+            'op' : "delete",
+            'instanceid': [cls.get_attributes(set,filelist)[0]['instanceId']],
+        }]
+
+        params['tasks'] = json.dumps(tasks)  # Necessary to stringify the tasks array before sending
+
+        logging.debug(f"Sending instructions : {params}")
+
+        response = cls.post_imatch( '/v1/attributes', params)
+
+        if response['result'] == "ok":
+            logging.debug("Success")
+        else:
+            logging.error("There was an error updating attributes.")
+            pprint(response)
+            sys.exit()
+
+    @classmethod
     def get_application_variable(cls, variable):
         """ Retrieve the named application variable from IMatch (Edit|Preferences|Variables)"""
         params = {}
@@ -170,7 +205,7 @@ class IMatchAPI:
         """ Return all attributes for a list of file ids. filelist is an array. """
 
         params['set'] = set
-        params['id'] = f"{id}"
+        params['id'] = IMatchUtility().prepare_filelist(id)
 
         logging.debug(f"Retreivving attributes for {params['id']}")
         response = cls.get_imatch( '/v1/attributes', params)
@@ -178,8 +213,7 @@ class IMatchAPI:
         # Strip away the wrapping from the result
         results = []
         for attributes in response['result']:
-            logging.debug(attributes)
-            results.append(attributes)
+            results.append(attributes['data'][0])
         logging.debug(f"{len(results)} attribute instances retrieved.")
         return results
 
@@ -187,7 +221,7 @@ class IMatchAPI:
     def get_file_categories(cls, filelist, params={}):
         """ Return the categories for the list of files """
 
-        params['id'] = IMatchUtility().file_id_list(filelist)
+        params['id'] = IMatchUtility().prepare_filelist(filelist)
 
         response = cls.get_imatch( '/v1/files/categories', params)
         results = {}
@@ -219,7 +253,7 @@ class IMatchAPI:
     def get_file_metadata(cls, filelist, params={}):
         """ Return details list of file ids """
 
-        params['id'] = IMatchUtility().file_id_list(filelist)
+        params['id'] = IMatchUtility().prepare_filelist(filelist)
         response = cls.get_imatch( '/v1/files', params)
         return response['files']
     
@@ -238,42 +272,6 @@ class IMatchAPI:
         else:
             return None
 
-
-    @classmethod
-    def files_for_selection(cls, params={'fields': 'id,filename'}):
-        """ Return the requested information all selected files in the active file window. """
-
-        params['idlist'] = '@imatch.filewindow.active.selection'
-        response = cls.get_imatch("/v1/files", params)
-        return response['files']
- 
-
-    @classmethod
-    def list_file_names(cls):
-        """ Print the id and name of all selected files in the active file window. """
-
-        try:
-            req = requests.get(cls.hostURL + '/v1/files', params={
-            'auth_token': cls.token(),
-            'idlist': '@imatch.filewindow.active.selection',
-            'fields': 'id,filename'
-            }, timeout=cls.REQUEST_TIMEOUT)
-
-            response = json.loads(req.text)
-
-            if req.status_code == requests.codes.ok:
-                print(response['files'])
-                for f in response['files']:
-                    print(f['id'],' ',f['fileName'])
-            else:
-                req.raise_for_status()
-            return
-        except requests.exceptions.RequestException as re:
-            print(re)
-            print(response)
-        except Exception as ex:
-            print(ex)
-
     @classmethod
     def file_collections(cls, image_id) -> bool:
         """ Returns the collections a file belongs to """
@@ -291,29 +289,33 @@ class IMatchAPI:
             print(ex)
 
     @classmethod
-    def set_attributes(cls, set, id, params={}, data={}):
+    def set_attributes(cls, set, filelist, params={}, data={}):
         """ Set attributes for image with id. Assumes attributes only exist once. Will either add or update as needed.
          (modification required if multiple instances of attribute sets are to be managed) """
 
         params['set'] = set
-        params['id'] = f"{id}"
+        params['id'] = IMatchUtility().prepare_filelist(filelist)
 
         # Can neither assume no attribute instance, or an existing attribute instance. 
         # Check first
 
-        if len(cls.get_attributes(set, id)) == 0:
+        attributes = cls.get_attributes(set, filelist)
+
+        if len(attributes) == 0:
             # No existing attributes, do an add
-            op = 'add'
             logging.debug("Adding attribute row.")
+            tasks = [{
+                'op' : "add",
+                'data' : data
+            }]
         else:
             op = 'update'
             logging.debug("Updating existing attribute row.")
-
-        tasks = [{
-            'op' : op,
-            'instanceid': [1],
-            'data' : data
-        }]
+            tasks = [{
+                'op' : "add",
+                'instanceid': [attributes['instanceId']],
+                'data' : data
+            }]
 
         params['tasks'] = json.dumps(tasks)  # Necessary to stringify the tasks array before sending
 
@@ -336,13 +338,7 @@ class IMatchAPI:
         else:
             path = collection
 
-        if isinstance(filelist, list):
-            params['id'] = IMatchUtility().file_id_list(filelist)
-        else:
-            if isinstance(filelist, int):
-                params['id'] = f"{filelist}"
-            else:
-                raise TypeError("Filelist argument must be single integer or list of integers.")      
+        params['id'] = IMatchUtility().prepare_filelist(filelist)
             
         tasks = [{
             'op' : op,
@@ -365,15 +361,8 @@ class IMatchAPI:
         """ Set collections for files."""
         params = {}
         params['path'] = category
+        params['fileid'] = IMatchUtility().prepare_filelist(filelist)
 
-        if isinstance(filelist, list):
-            params['fileidlist'] = IMatchUtility().file_id_list(filelist)
-        else:
-            if isinstance(filelist, int):
-                params['fileid'] = f"{filelist}"
-            else:
-                raise TypeError("Filelist argument must be single integer or list of integers.")      
-            
         response = cls.post_imatch( '/v1/categories/unassign', params)
         if response is not None:
             if response['result'] == "ok":
