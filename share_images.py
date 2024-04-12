@@ -30,7 +30,6 @@ class Factory():
     @classmethod
     def build_image(cls, id, platform): 
         try:
-            print(cls.platforms[platform.name])
             return cls.platforms[platform.name]['image'](id, platform)
         except KeyError:
             print(f"{cls.__name__}.build(platform): '{platform.name}' is an unrecognised platform. Valid options are {cls.platforms.keys()}.")
