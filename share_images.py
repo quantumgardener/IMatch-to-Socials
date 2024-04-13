@@ -49,12 +49,9 @@ if __name__ == "__main__":
         print(f"Python version 3.10 or later required. You are running with version {sys.version_info.major}.{sys.version_info.minor}")
         sys.exit()
 
-
     # Retreive the complete list of Socials files from IMatch for all known
     # platforms. Within IMatch, files are in the Socials|{platform} category
     # or subcategories.
-
-    ##pprint(IMatchAPI.get_imatch("v1/collections",params={'id' : 'all','fields':'id,path'}))
     
     images = []             # main image store
     platform_controllers = set()
