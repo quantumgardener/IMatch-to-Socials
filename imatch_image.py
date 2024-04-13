@@ -1,4 +1,5 @@
 from datetime import datetime
+import sys
 import logging
 
 import IMatchAPI as im
@@ -155,7 +156,7 @@ class IMatchImage():
 
     def list_errors(self) -> None:
         print(f"Errors were found with {type(self).__name__}(name: {self.name}). Please update the master file's metadata.")
-        im.IMatchAPI.set_collections(IMatchAPI.COLLECTION_PINS_RED, self.id)
+        im.IMatchAPI.set_collections(im.IMatchAPI.COLLECTION_PINS_RED, self.id)
         for error in self.errors:
             print(error)
 

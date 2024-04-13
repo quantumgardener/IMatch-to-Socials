@@ -157,7 +157,7 @@ class FlickrController(PlatformController):
             
             # Now add back the "Approved" tags. If added on upload, they combine with IPTC weirdly
             resp = self.api.photos.addTags(tags=",".join(image.keywords), photo_id=photo_id)
-        except FlickrError as fe:
+        except flickrapi.FlickrError as fe:
                 print(fe)
                 sys.exit()
 
@@ -176,7 +176,7 @@ class FlickrController(PlatformController):
         try:
             attributes = im.IMatchAPI().get_attributes(self.name, image.id)[0]
             photo_id = attributes['photo_id']
-            self.api.photos.delete(photo_id = photo_id)
+            response = self.api.photos.delete(photo_id = photo_id)
         except flickrapi.FlickrError as fe:
             print(fe)
             print(response)

@@ -40,10 +40,10 @@ class PlatformController():
             # Prepare the image for attaching to the status. In Mastodon, "posts/toots" are all status
             # Upload the media, then the status with the media attached. 
             if config.TESTING:
-                logging.info(f"{self.name}: **TEST** Adding {image.filename} ({image.size/config.MB_SIZE:2.1f} MB) ({progress_counter}/{progress_end})")
+                logging.info(f'{self.name}: **TEST** Adding {image.filename} ({image.size/config.MB_SIZE:2.1f} MB) ({progress_counter}/{progress_end}) "{image.title}"')
                 progress_counter += 1       
                 continue                            
-            logging.info(f'{self.name}: Adding {image.filename} ({image.size/config.MB_SIZE:2.1f} MB) ({progress_counter}/{progress_end})')
+            logging.info(f'{self.name}: Adding {image.filename} ({image.size/config.MB_SIZE:2.1f} MB) ({progress_counter}/{progress_end}) "{image.title}"')
 
             self.commit_add(image)
             progress_counter += 1
