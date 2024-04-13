@@ -1,6 +1,6 @@
-# IMatch-Python-API
+# IMatch-to-Socials
 
-**IMatch-Python-API** is a Python wrapper for the IMatch API functions. [IMatch](https://www.photools.com) is a powerful digital asset management systems for managing photos and their metadata. I've been using it since forever. One of the features is a full backend API for manipulating information in the database using scripts.
+**IMatch-to-socials** automates uploading images from [IMatch](https://www.photools.com) to flickr and pixelfed. IMatch is a powerful digital asset management systems for managing photos and their metadata. I've been using it since forever. One of the features is a full backend API for manipulating information in the database using scripts.
 
 > **This is a hobby project.** I've created it for my own purposes to assist me upload images to my pixelfed and flickr accounts. The code will always reflect my personal needs. You are free to fork your own copy. My accounts are:
 > - [@dcbuchan@pixelfed.au](https://pixelfed.au/dcbuchan)
