@@ -71,7 +71,7 @@ class PixelfedController(PlatformController):
             # Create a Mastodon instance. Get secrets from IMatch
             # https://www.photools.com/help/imatch/index.html#var_basics.htm
             try:
-                logging.info(f"{self.name}: Connecting to platform.")
+                logging.info(f"{self.name}: Work to do -- Connecting to platform.")
                 pixelfed = mastodon.Mastodon(
                     access_token = im.IMatchAPI.get_application_variable("pixelfed_token"),
                     api_base_url = im.IMatchAPI.get_application_variable("pixelfed_url")
@@ -123,9 +123,8 @@ class PixelfedController(PlatformController):
                 visibility = self._visibility
             )
 
-            #Update the image in IMatch by adding the attributes below.
-            x = image.id
-            im.IMatchAPI().set_attributes("pixelfed", x, data = {
+            # Update the image in IMatch by adding the attributes below.
+            im.IMatchAPI().set_attributes(self.name, image.id, data = {
                 'posted' : status['created_at'].isoformat()[:10],
                 'media_id' : media['id'],
                 'status_id' : status['id'],
@@ -144,14 +143,13 @@ class PixelfedController(PlatformController):
     def commit_delete(self, image):
         """Make the api call to delete the image from the platform"""
         try:
-            attributes = im.IMatchAPI().get_attributes("pixelfed", image.id)[0]
+            attributes = im.IMatchAPI().get_attributes(self.name, image.id)[0]
             status_id = attributes['status_id']
 
             # Update the status with new text
             status = self.api.status_delete(
                 id = status_id,
             )
-            print(status)
         except KeyError:
             logging.error(f"{self.name}: Missed validating an image field somewhere.")
             sys.exit()
@@ -165,7 +163,7 @@ class PixelfedController(PlatformController):
     def commit_update(self, image):
         """Make the api call to update the image on the platform"""
         try:
-            attributes = im.IMatchAPI().get_attributes("pixelfed", image.id)[0]
+            attributes = im.IMatchAPI().get_attributes(self.name, image.id)[0]
             media_id = attributes['media_id']
             status_id = attributes['status_id']
 
@@ -180,7 +178,6 @@ class PixelfedController(PlatformController):
                 status = image.full_description,
                 media_ids = media, 
             )
-            print(status)
         except KeyError:
             logging.error(f"{self.name}: validating an image field somewhere.")
             sys.exit()
