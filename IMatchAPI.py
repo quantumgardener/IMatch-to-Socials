@@ -4,6 +4,7 @@ import requests   # See: http://docs.python-requests.org/en/master/
 from pprint import pprint
 import logging
 import sys
+
 logging.getLogger('urllib3').setLevel(logging.INFO) # Don't want this debug level to cloud ours
 
 ## Utility class to make the main IMatchAPI class a little less complex
@@ -216,6 +217,16 @@ class IMatchAPI:
             results.append(attributes['data'][0])
         logging.debug(f"{len(results)} attribute instances retrieved.")
         return results
+
+    @classmethod
+    def get_category_info(cls, category, params={}):
+        """ Return information about a category"""
+
+        params['path'] = category
+        
+        logging.debug(f"Retreivving category information for {category}")
+        response = cls.get_imatch( '/v1/categories', params)
+        return response['categories']
 
     @classmethod
     def get_file_categories(cls, filelist, params={}):

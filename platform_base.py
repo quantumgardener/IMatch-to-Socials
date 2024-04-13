@@ -138,10 +138,10 @@ class PlatformController():
         for image in self.images_to_update:
             image.prepare_for_upload()
             if config.TESTING:
-                logging.info(f'{self.name}: **TEST** Updating ({progress_counter}/{progress_end}) "{image.title}"')
+                logging.info(f'{self.name}: **TEST** Updating ({image.size/config.MB_SIZE:2.1f} MB) ({progress_counter}/{progress_end}) "{image.title}"')
                 progress_counter += 1       
                 continue
-            logging.info(f'{self.name}: Updating ({progress_counter}/{progress_end}) "{image.title}"')
+            logging.info(f'{self.name}: Updating ({image.size/config.MB_SIZE:2.1f} MB) ({progress_counter}/{progress_end}) "{image.title}"')
 
             self.commit_update(image)
 
@@ -154,8 +154,6 @@ class PlatformController():
                 image.id
                 )
             progress_counter += 1       
-
-        
 
     @property
     def stats(self):
