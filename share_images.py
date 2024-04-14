@@ -59,9 +59,14 @@ if __name__ == "__main__":
 
     im.IMatchAPI()             # Perform initial connection
     
-    # Gather all image information
-    for platform in Factory.platforms.keys():
-        platform_controllers.add(Factory.build_controller(platform))
+    # Gather all image information for the specified platforms
+    if len(sys.argv[1:]) > 0:
+        for platform in sys.argv[1:]:
+            platform_controllers.add(Factory.build_controller(platform))
+    else:
+        # Do the lot
+        for platform in Factory.platforms.keys():
+            platform_controllers.add(Factory.build_controller(platform))
 
     for controller in platform_controllers:
         print( "--------------------------------------------------------------------------------------")
