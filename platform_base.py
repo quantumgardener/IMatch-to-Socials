@@ -40,10 +40,10 @@ class PlatformController():
             # Prepare the image for attaching to the status. In Mastodon, "posts/toots" are all status
             # Upload the media, then the status with the media attached. 
             if config.TESTING:
-                logging.info(f'{self.name}: **TEST** Adding {image.filename} ({image.size/config.MB_SIZE:2.1f} MB) ({progress_counter}/{progress_end}) "{image.title}"')
+                print(f'{self.name}: **TEST** Adding {image.filename} ({image.size/config.MB_SIZE:2.1f} MB) ({progress_counter}/{progress_end}) "{image.title}"')
                 progress_counter += 1       
                 continue                            
-            logging.info(f'{self.name}: Adding {image.filename} ({image.size/config.MB_SIZE:2.1f} MB) ({progress_counter}/{progress_end}) "{image.title}"')
+            print(f'{self.name}: Adding {image.filename} ({image.size/config.MB_SIZE:2.1f} MB) ({progress_counter}/{progress_end}) "{image.title}"')
 
             self.commit_add(image)
             progress_counter += 1
@@ -87,10 +87,10 @@ class PlatformController():
         progress_end = len(self.images_to_delete)
         for image in self.images_to_delete:
             if config.TESTING:
-                logging.info(f'{self.name}: **Test** Deleting ({progress_counter}/{progress_end}) "{image.title}"')
+                print(f'{self.name}: **Test** Deleting ({progress_counter}/{progress_end}) "{image.title}"')
                 progress_counter += 1       
                 #continue    
-            logging.info(f'{self.name}: Deleting ({progress_counter}/{progress_end}) "{image.title}"')
+            print(f'{self.name}: Deleting ({progress_counter}/{progress_end}) "{image.title}"')
 
             self.commit_delete(image)
             deleted_images.add(image.id)
@@ -110,20 +110,20 @@ class PlatformController():
     def list_errors(self):
         """List information about all images that are invalid and were not processed"""
         if len(self.invalid_images) > 0:
-            logging.error( "--------------------------------------------------------------------------------------")
-            logging.error(f"{self.name}: The following images had errors are were tagged invalid for processing.")
+            print( "--------------------------------------------------------------------------------------")
+            print(f"{self.name}: The following images had errors are were tagged invalid for processing.")
             for image in sorted(self.invalid_images, key=lambda x: x.name):
-                logging.error(image.name)
+                print(image.name)
                 for error in image.errors:
-                    logging.error(error)
+                    print(error)
 
     def summarise(self):
         """Output summary of images processed"""
         stats = self.stats
-        logging.info( "--------------------------------------------------------------------------------------")
-        logging.info(f"{self.name}: Summary of images processed")
+        print( "--------------------------------------------------------------------------------------")
+        print(f"{self.name}: Summary of images processed")
         for val in stats.keys():
-            logging.info(f"-- {stats[val]} {val} images")
+            print(f"-- {stats[val]} {val} images")
 
     def update_images(self):
         """Update images already on the platform"""
@@ -138,10 +138,10 @@ class PlatformController():
         for image in self.images_to_update:
             image.prepare_for_upload()
             if config.TESTING:
-                logging.info(f'{self.name}: **TEST** Updating ({image.size/config.MB_SIZE:2.1f} MB) ({progress_counter}/{progress_end}) "{image.title}"')
+                print(f'{self.name}: **TEST** Updating ({image.size/config.MB_SIZE:2.1f} MB) ({progress_counter}/{progress_end}) "{image.title}"')
                 progress_counter += 1       
                 continue
-            logging.info(f'{self.name}: Updating ({image.size/config.MB_SIZE:2.1f} MB) ({progress_counter}/{progress_end}) "{image.title}"')
+            print(f'{self.name}: Updating ({image.size/config.MB_SIZE:2.1f} MB) ({progress_counter}/{progress_end}) "{image.title}"')
 
             self.commit_update(image)
 

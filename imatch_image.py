@@ -46,8 +46,8 @@ class IMatchImage():
                     case other:      
                         setattr(self, attribute, image_info[attribute])  
         except KeyError:
-            print(f"Attribute {attribute} not returned from get_file_metadata() call")
-            sys.exit()
+            logging.error(f"Attribute {attribute} not returned from get_file_metadata() call")
+            sys.exit(1)
 
         # Now grab the information from the master. This also protects us if the
         # metadata has not yet been propogated.
@@ -74,8 +74,8 @@ class IMatchImage():
             for attribute in image_info.keys():
                 setattr(self, attribute, image_info[attribute])  # remove prefix for our purposes
         except KeyError:
-            print(f"Attribute {attribute} not returned from get_file_metadata() call")
-            sys.exit()
+            logging.error(f"Attribute {attribute} not returned from get_file_metadata() call")
+            sys.exit(1)
         
         # Retrieve the list of categories the image belongs to.
         self.categories = im.IMatchAPI.get_file_categories([self.id], params={

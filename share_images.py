@@ -7,6 +7,7 @@ import IMatchAPI as im
 import pixelfed
 
 logging.basicConfig(
+    # stream = sys.stdout,
     level = logging.INFO,
     format = '%(levelname)8s | %(message)s'
     )
@@ -32,7 +33,7 @@ class Factory():
         try:
             return cls.platforms[platform.name]['image'](id, platform)
         except KeyError:
-            print(f"{cls.__name__}.build(platform): '{platform.name}' is an unrecognised platform. Valid options are {cls.platforms.keys()}.")
+            logging.error(f"{cls.__name__}.build(platform): '{platform.name}' is an unrecognised platform. Valid options are {cls.platforms.keys()}.")
             sys.exit()
         
     @classmethod
@@ -40,7 +41,7 @@ class Factory():
         try:
             return cls.platforms[platform]['controller'](platform)
         except KeyError:
-            print(f"{cls.__name__}.build(platform): '{platform.name}' is an unrecognised platform. Valid options are {cls.platforms.keys()}.")
+            logging.error(f"{cls.__name__}.build(platform): '{platform.name}' is an unrecognised platform. Valid options are {cls.platforms.keys()}.")
             sys.exit()
           
 if __name__ == "__main__":
@@ -52,7 +53,7 @@ if __name__ == "__main__":
     # Retreive the complete list of Socials files from IMatch for all known
     # platforms. Within IMatch, files are in the Socials|{platform} category
     # or subcategories.
-    
+
     images = []             # main image store
     platform_controllers = set()
 
@@ -63,11 +64,11 @@ if __name__ == "__main__":
         platform_controllers.add(Factory.build_controller(platform))
 
     for controller in platform_controllers:
-        logging.info( "--------------------------------------------------------------------------------------")
-        logging.info(f"{controller.name}: Gathering images from IMatch.")
+        print( "--------------------------------------------------------------------------------------")
+        print(f"{controller.name}: Gathering images from IMatch.")
         for image_id in im.IMatchAPI.get_files_in_category(im.IMatchUtility.build_category([config.ROOT_CATEGORY,controller.name])):
             image = Factory.build_image(image_id, controller)
-        logging.info(f"{controller.name}: {controller.stats['total']} images gathered from IMatch.")
+        print(f"{controller.name}: {controller.stats['total']} images gathered from IMatch.")
 
         controller.classify_images()
         controller.add_images()
@@ -85,12 +86,13 @@ if __name__ == "__main__":
             except KeyError:
                 stats[stat] = platform_stats[stat]
             
-    logging.info( "--------------------------------------------------------------------------------------")
-    logging.info(f"Final summary of images processed")
+    print( "--------------------------------------------------------------------------------------")
+    print(f"Final summary of images processed")
     for val in stats.keys():
-        logging.info(f"-- {stats[val]} {val} images")
+        print(f"-- {stats[val]} {val} images")
     
-    logging.info("--------------------------------------------------------------------------------------")
-    logging.info("Done.")
+    print("--------------------------------------------------------------------------------------")
+    print("Done.")
+    sys.exit(0)
 
 

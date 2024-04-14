@@ -89,7 +89,7 @@ class IMatchAPI:
             IMatchAPI.__host_url = f"http://127.0.0.1:{host_port}"
 
             try:
-                logging.info(f"[IMatchAPI] Attempting connection to IMatch on port {host_port}")
+                print(f"IMatchAPI: Attempting connection to IMatch on port {host_port}")
                 req = requests.post(IMatchAPI.__host_url + '/v1/authenticate', params={
                     'id': os.getlogin(),
                     'password': '',
@@ -105,17 +105,17 @@ class IMatchAPI:
                     # Raise the exception matching the HTTP status code
                     req.raise_for_status()
 
-                logging.info(f"[IMatchAPI] Authenticated to {IMatchAPI.__host_url}")
+                print(f"IMatchAPI: Authenticated to {IMatchAPI.__host_url}")
                 return
             except requests.exceptions.ConnectionError as ce:
-                logging.info(f"[IMatchAPI] Unable to connect to IMatch on port {host_port}. Please check IMatch is running and the port is correct.\n\nThe full error was {ce}")
-                sys.exit()
+                logging.erorr(f"[IMatchAPI] Unable to connect to IMatch on port {host_port}. Please check IMatch is running and the port is correct.\n\nThe full error was {ce}")
+                sys.exit(1)
             except requests.exceptions.RequestException as re:
                 print(re)
                 sys.exit()
             except Exception as ex:
                 print(ex)
-                sys.exit()
+                sys.exit(1)
 
     @classmethod
     def get_imatch(cls, endpoint, params):
@@ -136,10 +136,10 @@ class IMatchAPI:
             else:
                 req.raise_for_status()
         except requests.exceptions.RequestException as re:
-            print(re)
-            print(response)
+            logging.error(re)
+            logging.error(response)
         except Exception as ex:
-            print(ex)
+            logging.error(ex)
 
     @classmethod
     def post_imatch(cls, endpoint, params):
@@ -161,10 +161,12 @@ class IMatchAPI:
                 req.raise_for_status()
             return
         except requests.exceptions.RequestException as re:
-            print(re)
-            print(response)
+            logging.error(re)
+            logging.error(response)
+            sys.exit(1)
         except Exception as ex:
-            print(ex)
+            logging.error(ex)
+            sys.exit(1)
 
     @classmethod
     def delete_attributes(cls, set, filelist, params={}, data={}):
@@ -190,7 +192,7 @@ class IMatchAPI:
         else:
             logging.error("There was an error updating attributes.")
             pprint(response)
-            sys.exit()
+            sys.exit(1)
 
     @classmethod
     def get_application_variable(cls, variable):

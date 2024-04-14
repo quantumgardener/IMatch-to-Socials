@@ -71,31 +71,31 @@ class PixelfedController(PlatformController):
             # Create a Mastodon instance. Get secrets from IMatch
             # https://www.photools.com/help/imatch/index.html#var_basics.htm
             try:
-                logging.info(f"{self.name}: Work to do -- Connecting to platform.")
+                print(f"{self.name}: Work to do -- Connecting to platform.")
                 pixelfed = mastodon.Mastodon(
                     access_token = im.IMatchAPI.get_application_variable("pixelfed_token"),
                     api_base_url = im.IMatchAPI.get_application_variable("pixelfed_url")
                 )
             except mastodon.MastodonUnauthorizedError:
                 logging.error(f"{self.name} unauthorised for connection.")
-                sys.exit()
+                sys.exit(1)
 
             # Fetch my account details. Serves as a good check of connection details
             # before bothering to upload images. If it fails here, nothing else will work.
             try:
-                logging.info(f"{self.name}: Verifying pixelfed account credentials.")
+                print(f"{self.name}: Verifying pixelfed account credentials.")
                 account = pixelfed.account_verify_credentials()
-                logging.info(f"{self.name}: Verified. Connected to {account['url']}.")
+                print(f"{self.name}: Verified. Connected to {account['url']}.")
             except mastodon.MastodonNetworkError as mne:
-                logging.error(f"{self.name}: Unable to obtain account details. Check URL {IMatchAPI.get_application_variable("pixelfed_url")}.")
-                print (mne)
-                sys.exit()
+                logging.error(f"{self.name}: Unable to obtain account details. Check URL {im.IMatchAPI.get_application_variable("pixelfed_url")}.")
+                logging.error(mne)
+                sys.exit(1)
             except mastodon.MastodonAPIError:
                 logging.error(f"{self.name}: Unable to access credentials. Check token.")
-                sys.exit()
+                sys.exit(1)
             except Exception as e:
-                print(f"{self.name}: An unexpected error occurred: {e}")
-                sys.exit()
+                logging.error(f"{self.name}: An unexpected error occurred: {e}")
+                sys.exit(1)
 
             ## Get the default visibility for posts. Can be one of:
             # public = Visible to everyone, shown in public timelines.

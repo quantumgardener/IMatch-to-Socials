@@ -105,7 +105,7 @@ class FlickrController(PlatformController):
             return
         else: 
             try:
-                logging.info(f"{self.name}: Work to do -- Connecting to platform.")
+                print(f"{self.name}: Work to do -- Connecting to platform.")
                 flickr = flickrapi.FlickrAPI(
                     im.IMatchAPI.get_application_variable("flickr_apikey"),
                     im.IMatchAPI.get_application_variable("flickr_apisecret"),
@@ -114,7 +114,7 @@ class FlickrController(PlatformController):
                 flickr.authenticate_via_browser(
                     perms = 'delete'
                     )
-                logging.info(f"{self.name}: Authenticated.")
+                print(f"{self.name}: Authenticated.")
             except Exception as ex:
                 logging.error(f"{self.name}: {ex}")
                 sys.exit()
@@ -158,8 +158,8 @@ class FlickrController(PlatformController):
             # Now add back the "Approved" tags. If added on upload, they combine with IPTC weirdly
             resp = self.api.photos.addTags(tags=",".join(image.keywords), photo_id=photo_id)
         except flickrapi.FlickrError as fe:
-                print(fe)
-                sys.exit()
+                logging.error(fe)
+                sys.exit(1)
 
         # Update the image in IMatch by adding the attributes below.
         posted = datetime.now().isoformat()[:10]
@@ -171,16 +171,14 @@ class FlickrController(PlatformController):
                             
     def commit_delete(self, image):
         """Make the api call to delete the image from the platform"""
-        # print('Step 4: Delete photo')
-        # flickr.photos.delete(photo_id=photo_id)
         try:
             attributes = im.IMatchAPI().get_attributes(self.name, image.id)[0]
             photo_id = attributes['photo_id']
             response = self.api.photos.delete(photo_id = photo_id)
         except flickrapi.FlickrError as fe:
-            print(fe)
-            print(response)
-            sys.exit()
+            logging.error(fe)
+            logging.error(response)
+            sys.exit(1)
 
     def commit_update(self, image):
         """Make the api call to update the image on the platform"""
@@ -264,7 +262,7 @@ class FlickrController(PlatformController):
                         photo_id=photo_id
                         )   
         except flickrapi.FlickrError as fe:
-            print(fe)
-            print(response)
-            sys.exit()
+            logging.error(fe)
+            logging.error(response)
+            sys.exit(1)
 
