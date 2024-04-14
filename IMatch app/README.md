@@ -10,7 +10,7 @@ There are options for both flickr and pixelfed, flickr alone or pixelfed alone. 
     - Name = `imatch_to_socials_python_script_path`
     - String Value = path to where `share_images.py` is stored
 
-    ![application_variables_screenshot.png]
+    ![Application Variables Screenshot](https://github.com/quantumgardener/IMatch-to-Socials/blob/main/IMatch%20app/application_variables_screenshot.png)
 3. Restart IMatch
 
 Of course, you will also need to provide your `flickr_apikey`, `flickr_apisecret`, `pixelfed_token` and `pixelfed_url` for the scripts to work, along with your defaults for the other variables listed.
