@@ -65,7 +65,8 @@ class FlickrImage(IMatchImage):
     def is_valid(self) -> bool:
         result = super().is_valid
         if self.size > FlickrImage.__MAX_SIZE:
-            logging.error(f'Skipping: {self.name} is too large to upload: {self.size/config.MB_SIZE:2.1f} MB. Max is {FlickrImage.__MAX_SIZE/config.MB_SIZE:2.1f} MB.')
+            logging.error(f'{self.controller.name}: Skipping {self.name} is too large to upload: {self.size/config.MB_SIZE:2.1f} MB. Max is {FlickrImage.__MAX_SIZE/config.MB_SIZE:2.1f} MB.')
+            print(f'{self.controller.name}: Skipping {self.name} is too large to upload: {self.size/config.MB_SIZE:2.1f} MB. Max is {FlickrImage.__MAX_SIZE/config.MB_SIZE:2.1f} MB.')
             self.errors.append(f"-- {self.size/config.MB_SIZE:2.1f} MB exceeds max {FlickrImage.__MAX_SIZE/config.MB_SIZE:2.1f} MB")
         return len(self.errors) == 0 and result
 

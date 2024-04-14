@@ -50,7 +50,8 @@ class PixelfedImage(IMatchImage):
             except AttributeError:
                 self.errors.append(f"-- missing '{attribute}'")
         if self.size > PixelfedImage.__MAX_SIZE:
-            logging.error(f'Skipping: {self.name} is too large to upload: {self.size/config.MB_SIZE:2.1f} MB. Max is {PixelfedImage.__MAX_SIZE/config.MB_SIZE:2.1f} MB.')
+            logging.error(f'{self.controller.name}: Skipping {self.name} is too large to upload: {self.size/config.MB_SIZE:2.1f} MB. Max is {PixelfedImage.__MAX_SIZE/config.MB_SIZE:2.1f} MB.')
+            print(f'{self.controller.name}: Skipping {self.name} is too large to upload: {self.size/config.MB_SIZE:2.1f} MB. Max is {PixelfedImage.__MAX_SIZE/config.MB_SIZE:2.1f} MB.')
             self.errors.append(f"-- {self.size/config.MB_SIZE:2.1f} MB exceeds max {PixelfedImage.__MAX_SIZE/config.MB_SIZE:2.1f} MB")
         return len(self.errors) == 0 and result
 
