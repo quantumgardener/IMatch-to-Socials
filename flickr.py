@@ -199,6 +199,7 @@ class FlickrController(PlatformController):
                 )
 
             response = self.api.photos.setDates(photo_id=photo_id, date_taken=str(image.date_time), date_taken_granularity=0)
+            response = self.api.photos.addTags(tags=",".join(image.keywords), photo_id=photo_id)
 
             contexts = self.api.photos.getAllContexts(
                 photo_id = photo_id, 
