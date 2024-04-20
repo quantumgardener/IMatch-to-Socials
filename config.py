@@ -5,6 +5,9 @@ ROOT_CATEGORY = "Socials"
 UPDATE_CATEGORY = "_update"
 DELETE_CATEGORY = "_delete"
 
+# QA category
+QA_CATEGORY = "QA"
+
 # Standardise reference to Megabyte
 MB_SIZE = 1048576
 

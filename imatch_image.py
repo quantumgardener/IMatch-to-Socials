@@ -229,17 +229,25 @@ class IMatchImage():
         for attribute in ['title', 'description']:
             try:
                 if getattr(self, attribute).strip() == '':
-                    self.errors.append(f"-- missing '{attribute}'")
+                    self.errors.append(f"missing {attribute}")
             except AttributeError:
-                self.errors.append(f"-- missing '{attribute}'")
+                self.errors.append(f"missing {attribute}")
+        genre_ok = False
+        for keyword in self.hierarchical_keywords:
+            splits = keyword.split("|")
+            match splits[0]:
+                case 'genre':
+                    genre_ok = True
+        if not genre_ok:
+            self.errors.append(f"missing genre")
         if self.is_master:
-            self.errors.append("Attemting to upload master image.")
+            self.errors.append("is master")
         return len(self.errors) == 0
 
     @property
     def controller(self):
         if self._controller is None:
-            raise ValueError ("Controller has not been set")
+            raise ValueError("Controller has not been set")
         else:
             return self._controller
 

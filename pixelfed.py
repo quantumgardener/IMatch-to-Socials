@@ -46,9 +46,9 @@ class PixelfedImage(IMatchImage):
         for attribute in ['headline']:
             try:
                 if getattr(self, attribute).strip() == '':
-                    self.errors.append(f"-- missing '{attribute}'")
+                    self.errors.append(f"missing {attribute}")
             except AttributeError:
-                self.errors.append(f"-- missing '{attribute}'")
+                self.errors.append(f"missing {attribute}")
         if self.size > PixelfedImage.__MAX_SIZE:
             logging.error(f'{self.controller.name}: Skipping {self.name} is too large to upload: {self.size/config.MB_SIZE:2.1f} MB. Max is {PixelfedImage.__MAX_SIZE/config.MB_SIZE:2.1f} MB.')
             print(f'{self.controller.name}: Skipping {self.name} is too large to upload: {self.size/config.MB_SIZE:2.1f} MB. Max is {PixelfedImage.__MAX_SIZE/config.MB_SIZE:2.1f} MB.')

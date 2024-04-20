@@ -110,12 +110,13 @@ class PlatformController():
     def list_errors(self):
         """List information about all images that are invalid and were not processed"""
         if len(self.invalid_images) > 0:
+
             print( "--------------------------------------------------------------------------------------")
-            print(f"{self.name}: The following images had errors are were tagged invalid for processing.")
+            print(f"{self.name}: The following images had errors are were tagged 'invalid for processing'. They have been assigned to '{config.ROOT_CATEGORY}|{config.QA_CATEGORY}' error categories.")
             for image in sorted(self.invalid_images, key=lambda x: x.name):
-                print(image.name)
+                print(f"-- {image.name}")
                 for error in image.errors:
-                    print(error)
+                    im.IMatchAPI().assign_category("|".join([config.ROOT_CATEGORY,config.QA_CATEGORY,error]), image.id)
 
     def summarise(self):
         """Output summary of images processed"""
