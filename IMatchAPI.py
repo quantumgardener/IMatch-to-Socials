@@ -169,6 +169,22 @@ class IMatchAPI:
             sys.exit(1)
 
     @classmethod
+    def assign_category(cls, category, filelist):
+        """Assign files to category"""
+        params = {}
+        params['path'] = category
+        params['fileid'] = IMatchUtility().prepare_filelist(filelist)
+
+        response = cls.post_imatch( '/v1/categories/assign', params)
+        if response is not None:
+            if response['result'] == "ok":
+                logging.debug("Success")
+                return
+        else:
+            print("There was an error removing images from the category. Please see message above.")
+            sys.exit()
+
+    @classmethod
     def delete_attributes(cls, set, filelist, params={}, data={}):
         """ Delete attributes for image with id. Assumes attributes only exist once.
          (modification required if multiple instances of attribute sets are to be managed) """
@@ -371,10 +387,11 @@ class IMatchAPI:
 
     @classmethod
     def unassign_category(cls, category, filelist):
-        """ Set collections for files."""
+        """Remove files from category"""
         params = {}
         params['path'] = category
         params['fileid'] = IMatchUtility().prepare_filelist(filelist)
+        print(params)
 
         response = cls.post_imatch( '/v1/categories/unassign', params)
         if response is not None:
