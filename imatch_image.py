@@ -130,7 +130,10 @@ class IMatchImage():
                         pass
                 case 'nature':
                     for nature in splits[1:]:
-                        self.add_keyword(nature) # Get the leaf
+                        self.add_keyword(nature) # Add each keyword
+                case 'toys and games':
+                    for nature in splits[1:]:
+                        self.add_keyword(nature) # Add each keyword
 
         # Add certain categories as keywords
         for categories in self.categories:
@@ -143,8 +146,9 @@ class IMatchImage():
         """Ensure all keywords are added without spaces"""
         no_spaces_keyword = keyword.replace(" ","")
         no_ampersand_keyword = no_spaces_keyword.replace("&","-and-")
-        self.keywords.add(no_ampersand_keyword)
-        return no_ampersand_keyword
+        no_dash_keyword = no_ampersand_keyword.replace("-","")
+        self.keywords.add(no_dash_keyword)
+        return no_dash_keyword
     
     def is_image_in_category(self, search_category) -> bool:
         found = False
