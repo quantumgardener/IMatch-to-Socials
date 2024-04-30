@@ -391,7 +391,6 @@ class IMatchAPI:
         params = {}
         params['path'] = category
         params['fileid'] = IMatchUtility().prepare_filelist(filelist)
-        print(params)
 
         response = cls.post_imatch( '/v1/categories/unassign', params)
         if response is not None:
