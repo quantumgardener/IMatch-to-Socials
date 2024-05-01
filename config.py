@@ -5,8 +5,8 @@ ROOT_CATEGORY = "Socials"
 UPDATE_CATEGORY = "_update"
 DELETE_CATEGORY = "_delete"
 
-# QA category
-QA_CATEGORY = "QA"
+# Error category root. All error categories sit below this
+ERROR_CATEGORY = "__errors"
 
 # Standardise reference to Megabyte
 MB_SIZE = 1048576

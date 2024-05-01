@@ -107,16 +107,21 @@ class PlatformController():
             )
         im.IMatchAPI.delete_attributes(self.name,list(deleted_images))
 
-    def list_errors(self):
+    def process_errors(self):
         """List information about all images that are invalid and were not processed"""
+        # Clear all images from the error categories before assigning those from this run.
+        children = im.IMatchAPI().get_categories_children("|".join([config.ROOT_CATEGORY,self.name,config.ERROR_CATEGORY]))
+        for child in children:
+            if len(child['files']) > 0:
+                im.IMatchAPI().unassign_category(child['path'], child['files'])
+
         if len(self.invalid_images) > 0:
 
             print( "--------------------------------------------------------------------------------------")
-            print(f"{self.name}: The following images had errors are were tagged 'invalid for processing'. They have been assigned to '{config.ROOT_CATEGORY}|{config.QA_CATEGORY}' error categories.")
+            print(f"{self.name}: Images with errors detected and tagged 'invalid for processing'. They have been assigned to '{config.ROOT_CATEGORY}|{self.name}' error categories.")
             for image in sorted(self.invalid_images, key=lambda x: x.name):
-                print(f"-- {image.name}")
                 for error in image.errors:
-                    im.IMatchAPI().assign_category("|".join([config.ROOT_CATEGORY,config.QA_CATEGORY,error]), image.id)
+                    im.IMatchAPI().assign_category("|".join([config.ROOT_CATEGORY,self.name,config.ERROR_CATEGORY,error]), image.id)
 
     def summarise(self):
         """Output summary of images processed"""
@@ -164,7 +169,7 @@ class PlatformController():
             "deleted" : len(self.images_to_delete),
             "updated" : len(self.images_to_update),
             "invalid" : len(self.invalid_images),
-            "ignored" : len(self.images)
+            "untouched" : len(self.images)
                         - len(self.images_to_add)
                         - len(self.images_to_delete)
                         - len(self.images_to_update)

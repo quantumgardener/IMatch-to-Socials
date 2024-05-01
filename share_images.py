@@ -59,14 +59,6 @@ if __name__ == "__main__":
 
     im.IMatchAPI()             # Perform initial connection
 
-    # Clear out all error categories. Would be nice if this were a dynamic list somehow basded on platform registering
-    # the type of errors it may raise
-    for error_category in ['is master', 'missing description', 'missing genre', 'missing headline', 'missing title']:
-        cat_name = "|".join([config.ROOT_CATEGORY,config.QA_CATEGORY,error_category])
-        images_in_category = im.IMatchAPI().get_files_in_category(cat_name)
-        if len(images_in_category) > 0:
-            im.IMatchAPI().unassign_category(cat_name, images_in_category)
-
     # Gather all image information for the specified platforms
     if len(sys.argv[1:]) > 0:
         for platform in sys.argv[1:]:
@@ -79,7 +71,7 @@ if __name__ == "__main__":
     for controller in platform_controllers:
         print( "--------------------------------------------------------------------------------------")
         print(f"{controller.name}: Gathering images from IMatch.")
-        for image_id in im.IMatchAPI.get_files_in_category(im.IMatchUtility.build_category([config.ROOT_CATEGORY,controller.name])):
+        for image_id in im.IMatchAPI.get_categories(im.IMatchUtility.build_category([config.ROOT_CATEGORY,controller.name]))['directFiles']:
             image = Factory.build_image(image_id, controller)
         print(f"{controller.name}: {controller.stats['total']} images gathered from IMatch.")
 
@@ -87,7 +79,7 @@ if __name__ == "__main__":
         controller.add_images()
         controller.update_images()
         controller.delete_images()
-        controller.list_errors()
+        controller.process_errors()
         controller.summarise()
 
     stats = {}

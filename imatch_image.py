@@ -158,12 +158,6 @@ class IMatchImage():
                 break
         return found
 
-    def list_errors(self) -> None:
-        print(f"Errors were found with {type(self).__name__}(name: {self.name}). Please update the master file's metadata.")
-        im.IMatchAPI.set_collections(im.IMatchAPI.COLLECTION_PINS_RED, self.id)
-        for error in self.errors:
-            print(error)
-
     @property
     def is_master(self) -> bool:
         return self.id == self.master_id
