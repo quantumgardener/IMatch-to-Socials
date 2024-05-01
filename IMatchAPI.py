@@ -261,12 +261,12 @@ class IMatchAPI:
         return results
         
     @classmethod
-    def get_files_in_category(cls, path):
+    def get_categories(cls, path):
         """ Return the requested information all files in the specified category """
 
         params={}
         params['path'] = path
-        params['fields'] = 'files'
+        params['fields'] = 'files,directfiles'
 
         logging.debug(f'Retrieving list of files in the {path} category.')
         response = cls.get_imatch( '/v1/categories', params)
@@ -276,7 +276,26 @@ class IMatchAPI:
         else:
             # Get straight to the data if present
             logging.debug(f"{len(response['categories'][0]['files'])} files found.")
-            return response['categories'][0]['files']
+            return response['categories'][0]
+
+    @classmethod
+    def get_categories_children(cls, path):
+        """ Return the requested information all child categories the specified category """
+
+        params={}
+        params['path'] = path
+        params['fields'] = 'children,files,path'
+
+        logging.debug(f'Retrieving list of children categories in the {path} category.')
+        response = cls.get_imatch( '/v1/categories', params)
+        if len(response['categories']) == 0:
+            logging.debug("0 categories found.")
+            return []
+        else:
+            # Get straight to the data if present
+            logging.debug(f"{len(response['categories'][0]['children'])} children found.")
+            return response['categories'][0]['children']
+
 
     @classmethod
     def get_file_metadata(cls, filelist, params={}):
