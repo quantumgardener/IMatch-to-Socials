@@ -13,21 +13,6 @@
 
 Obviously you will need some programming chops to work with what is presented here. I've commented the code extensively. Take it and play, but be sure you have backups of everything. This code works for my setup. It may not work for yours.
 
-## Script Dependencies
-
-All scripts require Python 3.10 or later.
-
-The main script is share_images.py.
-
-| Script                    | What it does                                                  | Requirements                                                                       |
-| ------------------------- | ------------------------------------------------------------- | ---------------------------------------------------------------------------------- |
-| **IMatchAPI.py**          | API wrapper that simplifies calls to IMatch                   | Your own copy of IMatch                                                            |
-| **pixelfed.py** | Code to pull information about images, and upload to Pixelfed | [Mastodon.py](https://pypi.org/project/Mastodon.py/) and your own Pixelfed app key |
-| **flickr.py**   | Code to manage uploads to flickr                              | [flick api](https://stuvel.eu/software/flickrapi/) and "pip install tzdata"        |
-
-## Further documentation
-Furher documentation, including explanation on how I've set up my IMatch database for this to work can be found at [IMatch to Socials](https://quantumgardener.info/notes/imatch-to-socials).
-
-
-> The pixelfed example could be used for any Mastodon instance.
+## Documentation
+The full documenmtation including explanation on how I've set up my IMatch database for this to work can be found at [IMatch to Socials](https://quantumgardener.info/notes/imatch-to-socials).
 
