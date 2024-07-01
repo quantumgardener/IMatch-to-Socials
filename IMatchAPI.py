@@ -152,21 +152,13 @@ class IMatchAPI:
         if endpoint[:1] != "/":
             endpoint = "/" + endpoint
 
-        try:
-            req = requests.post(cls.__host_url + endpoint, params, timeout=cls.REQUEST_TIMEOUT)
-            response = json.loads(req.text)
-            if req.status_code == requests.codes.ok:
-                return response
-            else:
-                req.raise_for_status()
-            return
-        except requests.exceptions.RequestException as re:
-            logging.error(re)
-            logging.error(response)
-            sys.exit(1)
-        except Exception as ex:
-            logging.error(ex)
-            sys.exit(1)
+        req = requests.post(cls.__host_url + endpoint, params, timeout=cls.REQUEST_TIMEOUT)
+        response = json.loads(req.text)
+        if req.status_code == requests.codes.ok:
+            return response
+        else:
+            req.raise_for_status()
+        return
 
     @classmethod
     def assign_category(cls, category, filelist):
@@ -175,14 +167,19 @@ class IMatchAPI:
         params['path'] = category
         params['fileid'] = IMatchUtility().prepare_filelist(filelist)
 
-        response = cls.post_imatch( '/v1/categories/assign', params)
-        if response is not None:
-            if response['result'] == "ok":
-                logging.debug("Success")
-                return
-        else:
-            print("There was an error removing images from the category. Please see message above.")
-            sys.exit()
+        try:
+            response = cls.post_imatch( '/v1/categories/assign', params)
+            if response is not None:
+                if response['result'] == "ok":
+                    logging.debug("Success")
+                    return
+            else:
+                print("There was an error removing images from the category. Please see message above.")
+                sys.exit()
+        except requests.exceptions.RequestException as re:
+            print(re)
+            print(params)
+            sys.exit(1)
 
     @classmethod
     def delete_attributes(cls, set, filelist, params={}, data={}):
