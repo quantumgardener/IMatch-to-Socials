@@ -43,7 +43,7 @@ class PlatformController():
                 print(f'{self.name}: **TEST** Adding {image.filename} ({image.size/config.MB_SIZE:2.1f} MB) ({progress_counter}/{progress_end}) "{image.title}"')
                 progress_counter += 1       
                 continue                            
-            print(f'{self.name}: Adding {image.filename} ({image.size/config.MB_SIZE:2.1f} MB) ({progress_counter}/{progress_end}) "{image.title}"')
+            print(f'{self.name}: Adding {image.filename} ({image.size/config.MB_SIZE:2.1f} MB) ({progress_counter}/{progress_end}) "{image.title}"  ... {image.name}')
 
             self.commit_add(image)
             progress_counter += 1
@@ -90,7 +90,7 @@ class PlatformController():
                 print(f'{self.name}: **Test** Deleting ({progress_counter}/{progress_end}) "{image.title}"')
                 progress_counter += 1       
                 #continue    
-            print(f'{self.name}: Deleting ({progress_counter}/{progress_end}) "{image.title}"')
+            print(f'{self.name}: Deleting ({progress_counter}/{progress_end}) "{image.title}"  ... {image.name}')
 
             self.commit_delete(image)
             deleted_images.add(image.id)
@@ -147,7 +147,7 @@ class PlatformController():
                 print(f'{self.name}: **TEST** Updating ({image.size/config.MB_SIZE:2.1f} MB) ({progress_counter}/{progress_end}) "{image.title}"')
                 progress_counter += 1       
                 continue
-            print(f'{self.name}: Updating ({image.size/config.MB_SIZE:2.1f} MB) ({progress_counter}/{progress_end}) "{image.title}"')
+            print(f'{self.name}: Updating ({image.size/config.MB_SIZE:2.1f} MB) ({progress_counter}/{progress_end}) "{image.title}" ... {image.name}')
 
             self.commit_update(image)
 
