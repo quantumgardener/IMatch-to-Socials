@@ -62,7 +62,9 @@ class IMatchImage():
             "variso" : "{File.MD.iso|value:formatted}", 
             "varlens" : "{File.MD.lens}",
             "varmodel" : "{File.MD.model}",
-            "varshutter_speed" : "{File.MD.shutterspeed|value:formatted}"   
+            "varshutter_speed" : "{File.MD.shutterspeed|value:formatted}",
+            "varlatitude" : "{File.MD.gpslatitude|value:rawfrm}",
+            "varlongitude" : "{File.MD.gpslongitude|value:rawfrm}"
             }
 
         self.master_id = im.IMatchAPI.get_master_id(self.id)
