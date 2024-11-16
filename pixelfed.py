@@ -9,8 +9,6 @@ from imatch_image import IMatchImage
 from platform_base import PlatformController
 import IMatchAPI as im
 import config
-import what3words as w3w
-
 
 class PixelfedImage(IMatchImage):
 
@@ -28,8 +26,6 @@ class PixelfedImage(IMatchImage):
         tmp_description.append('')
         if len(self.keywords) > 0:
             tmp_description.append(" ".join(["#" + keyword for keyword in self.keywords]))  # Ensure pixelfed keywords are hashtags
-            if self.latitude and self.longitude:
-                tmp_description.append( f"#what3words ///{w3w.What3Words.getWords(self.latitude, self.longitude)}")
             tmp_description.append('')
 
         shooting_info = self.shooting_info
