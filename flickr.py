@@ -200,6 +200,11 @@ class FlickrController(PlatformController):
 
             response = self.api.photos.setDates(photo_id=photo_id, date_taken=str(image.date_time), date_taken_granularity=0)
             response = self.api.photos.addTags(tags=",".join(image.keywords), photo_id=photo_id)
+            response = self.api.photos.setPerms(
+                photo_id=photo_id,
+                is_public=self.privacy['is_public'],
+                is_friend= self.privacy['is_friend'],
+                is_family = self.privacy['is_family'])
 
             contexts = self.api.photos.getAllContexts(
                 photo_id = photo_id, 
