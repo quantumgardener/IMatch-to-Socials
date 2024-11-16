@@ -89,7 +89,7 @@ class PlatformController():
             if config.TESTING:
                 print(f'{self.name}: **Test** Deleting ({progress_counter}/{progress_end}) "{image.title}"')
                 progress_counter += 1       
-                #continue    
+                continue    
             print(f'{self.name}: Deleting {image.filename} ({progress_counter}/{progress_end}) "{image.title}"  ... {image.name}')
 
             self.commit_delete(image)
