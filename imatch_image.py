@@ -69,7 +69,7 @@ class IMatchImage():
 
         self.master_id = im.IMatchAPI.get_master_id(self.id)
         if self.master_id == None:
-            # We are the master, use original id
+            # We are the master, use original id for collecting
             self.master_id = id
         image_info = im.IMatchAPI.get_file_metadata([self.master_id],master_params)[0]
         try:
@@ -229,11 +229,14 @@ class IMatchImage():
             except AttributeError:
                 self.errors.append(f"missing {attribute}")
         genre_ok = False
-        for keyword in self.hierarchical_keywords:
-            splits = keyword.split("|")
-            match splits[0]:
-                case 'genre':
-                    genre_ok = True
+        try:
+            for keyword in self.hierarchical_keywords:
+                splits = keyword.split("|")
+                match splits[0]:
+                    case 'genre':
+                        genre_ok = True
+        except AttributeError:
+            self.errors.append(f"no keywords")
         if not genre_ok:
             self.errors.append(f"missing genre")
         if self.is_master:
