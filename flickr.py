@@ -64,6 +64,12 @@ class FlickrImage(IMatchImage):
     @property
     def is_valid(self) -> bool:
         result = super().is_valid
+        for attribute in ['headline']:
+            try:
+                if getattr(self, attribute).strip() == '':
+                    self.errors.append(f"missing {attribute}")
+            except AttributeError:
+                self.errors.append(f"missing {attribute}")
         if self.size > FlickrImage.__MAX_SIZE:
             logging.error(f'{self.controller.name}: Skipping {self.name} is too large to upload: {self.size/config.MB_SIZE:2.1f} MB. Max is {FlickrImage.__MAX_SIZE/config.MB_SIZE:2.1f} MB.')
             print(f'{self.controller.name}: Skipping {self.name} is too large to upload: {self.size/config.MB_SIZE:2.1f} MB. Max is {FlickrImage.__MAX_SIZE/config.MB_SIZE:2.1f} MB.')
