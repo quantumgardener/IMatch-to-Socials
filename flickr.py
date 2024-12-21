@@ -209,10 +209,12 @@ class FlickrController(PlatformController):
                 photo_id = photo_id
                 )        
 
-            response = self.api.replace(
-                filename = image.filename, 
-                photo_id = photo_id
-                )
+            if image.operation == IMatchImage.OP_UPDATE:
+                # Update image alongside metadata
+                response = self.api.replace(
+                    filename = image.filename, 
+                    photo_id = photo_id
+                    )
 
             response = self.api.photos.setDates(photo_id=photo_id, date_taken=str(image.date_time), date_taken_granularity=0)
             response = self.api.photos.addTags(tags=",".join(image.keywords), photo_id=photo_id)

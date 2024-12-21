@@ -16,6 +16,7 @@ class IMatchImage():
     OP_ADD = 1
     OP_UPDATE = 2
     OP_DELETE = 3
+    OP_METADATA = 4
 
     def __init__(self, id, controller) -> None:
         self.id = id
@@ -74,13 +75,15 @@ class IMatchImage():
                 self.operation = IMatchImage.OP_ADD
             else:
                 # Check collections for overriding instructions
-                if self.wants_update and self.wants_delete:
+                if (self.wants_update or self.wants_metadata) and self.wants_delete:
                     # We have conflicting instructions. 
-                    self.errors.append(f"Conflicting instructions. Images is in both {IMatchImage.config.DELETE_CATEGORY} and IMatchImage.config.UPDATE_CATEGORY categories.")
+                    self.errors.append(f"Conflicting instructions. Images is in both {IMatchImage.config.DELETE_CATEGORY} and {IMatchImage.config.UPDATE_CATEGORY} or {IMatchImage.config.UPDATE_METADATA_CATEGORY} categories.")
                     self.operation = IMatchImage.OP_INVALID
                 else:
                     if self.wants_update:
                         self.operation = IMatchImage.OP_UPDATE
+                    if self.wants_metadata:
+                        self.operation = IMatchImage.OP_METADATA
                     if self.wants_delete:
                         self.operation = IMatchImage.OP_DELETE
         else:
@@ -249,6 +252,16 @@ class IMatchImage():
                 config.ROOT_CATEGORY,
                 self._controller.name,
                 config.DELETE_CATEGORY
+                ])
+            )
+
+    @property
+    def wants_metadata(self) -> bool:
+        return self.is_image_in_category(
+            im.IMatchUtility.build_category([
+                config.ROOT_CATEGORY,
+                self._controller.name,
+                config.UPDATE_METADATA_CATEGORY
                 ])
             )
 

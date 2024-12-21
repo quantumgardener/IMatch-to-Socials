@@ -56,6 +56,8 @@ class PlatformController():
                     self.images_to_add.add(image)
                 case IMatchImage.OP_UPDATE:
                     self.images_to_update.add(image)
+                case IMatchImage.OP_METADATA:  # Update process restricts to metadata only
+                    self.images_to_update.add(image)
                 case IMatchImage.OP_DELETE:
                     self.images_to_delete.add(image)
                 case IMatchImage.OP_INVALID:
@@ -119,7 +121,7 @@ class PlatformController():
         if len(self.invalid_images) > 0:
 
             print( "--------------------------------------------------------------------------------------")
-            print(f"{self.name}: Images with errors detected and tagged 'invalid for processing'. They have been assigned to '{config.ROOT_CATEGORY}|{self.name}' error categories.")
+            print(f"{self.name}: Images with errors detected and assigned to '{config.ROOT_CATEGORY}|{self.name}' error categories.")
             for image in sorted(self.invalid_images, key=lambda x: x.name):
                 for error in image.errors:
                     im.IMatchAPI().assign_category("|".join([config.ROOT_CATEGORY,self.name,config.ERROR_CATEGORY,error]), image.id)
@@ -152,14 +154,27 @@ class PlatformController():
 
             self.commit_update(image)
 
-            im.IMatchAPI.unassign_category(
-                im.IMatchUtility.build_category([
-                    config.ROOT_CATEGORY,
-                    self.name,
-                    config.UPDATE_CATEGORY
-                    ]), 
-                image.id
-                )
+            if image.operation == IMatchImage.OP_UPDATE:
+                im.IMatchAPI.unassign_category(
+                    im.IMatchUtility.build_category([
+                        config.ROOT_CATEGORY,
+                        self.name,
+                        config.UPDATE_CATEGORY
+                        ]), 
+                    image.id
+                    )
+
+            if image.operation == IMatchImage.OP_METADATA:
+                im.IMatchAPI.unassign_category(
+                    im.IMatchUtility.build_category([
+                        config.ROOT_CATEGORY,
+                        self.name,
+                        config.UPDATE_METADATA_CATEGORY
+                        ]), 
+                    image.id
+                    )
+                
+
             progress_counter += 1       
 
     @property
