@@ -28,8 +28,14 @@ class FlickrImage(IMatchImage):
 
         #Set up the text items
 
-        tmp_description = [self.description]
+        tmp_description = [self.headline]
         tmp_description.append('')
+        tmp_description.append(self.description)
+        tmp_description.append('')
+
+        if self.circadatecreated != "":
+            tmp_description.append(f"Taken ca. {self.date_time.strftime("%#d %B %Y")}.")
+            tmp_description.append('')
 
         self.albums = []
         self.groups = []

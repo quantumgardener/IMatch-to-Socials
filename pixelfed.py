@@ -22,7 +22,11 @@ class PixelfedImage(IMatchImage):
         """Build variables ready for uploading."""
         super().prepare_for_upload()
 
-        tmp_description = [f"{self.title} -- {self.description} (Taken {self.date_time.strftime("%#d %B %Y")})"]
+        if self.circadatecreated != "":
+            circa = "ca. "
+        else:
+            circa = ""
+        tmp_description = [f"{self.title} -- {self.description} (Taken {circa}{self.date_time.strftime("%#d %B %Y")})"]
         tmp_description.append('')
         if len(self.keywords) > 0:
             tmp_description.append(" ".join(["#" + keyword for keyword in self.keywords]))  # Ensure pixelfed keywords are hashtags
