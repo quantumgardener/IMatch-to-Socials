@@ -1,6 +1,6 @@
 from datetime import datetime
-import sys
 import logging
+from pprint import pprint
 
 import IMatchAPI as im
 import config
@@ -22,37 +22,11 @@ class IMatchImage():
         self.errors = []    # hold any errors raised during the process
         self.controller = controller
         self.controller.register_image(self)
-        
-        # -----------------------------------------------------------------------------
-        # Now begins the process of collating the information to be posted alongside 
-        # the image itself. This is the information we want from the version to be be 
-        # posted, and later the master. Certain camera and shooting information is not
-        # propogated through the versions, so we will need to walk back up the version
-        # > master tree to obtain it.
-        params = {
-            "fields"           : "datetime,filename,name,size",
-            }
-        
-        image_info = im.IMatchAPI.get_file_metadata([self.id], params=params)[0]
-        try:
-            for attribute in image_info.keys():
-                # fileName is a special case. Ask for filename, get fileName in results
-                match attribute:
-                    case "fileName":
-                        setattr(self, 'filename', image_info[attribute])
-                    case "dateTime":
-                        date_time = datetime.strptime(image_info[attribute],'%Y-%m-%dT%H:%M:%S')
-                        setattr(self, "date_time", date_time)  
-                    case other:      
-                        setattr(self, attribute, image_info[attribute])  
-        except KeyError:
-            logging.error(f"Attribute {attribute} not returned from get_file_metadata() call")
-            sys.exit(1)
 
-        # Now grab the information from the master. This also protects us if the
-        # metadata has not yet been propogated.
-        master_params = {
-            "fields" : "", # Setting to "" stops retrieval of more than we need
+        # Get this image's information from IMatch. Process and save each
+        # as an attribute for easier reference.
+        image_params = {
+            "fields" : "datetime,filename,format,name,size", 
             "tagtitle" : "title",
             "tagdescription" : "description",
             "taghierarchical_keywords" : "hierarchicalkeywords",
@@ -66,24 +40,33 @@ class IMatchImage():
             "varlatitude" : "{File.MD.gpslatitude|value:rawfrm}",
             "varlongitude" : "{File.MD.gpslongitude|value:rawfrm}"
             }
-
-        self.master_id = im.IMatchAPI.get_master_id(self.id)
-        if self.master_id == None:
-            # We are the master, use original id for collecting
-            self.master_id = id
-        image_info = im.IMatchAPI.get_file_metadata([self.master_id],master_params)[0]
-        try:
-            for attribute in image_info.keys():
-                setattr(self, attribute, image_info[attribute])  # remove prefix for our purposes
-        except KeyError:
-            logging.error(f"Attribute {attribute} not returned from get_file_metadata() call")
-            sys.exit(1)
         
+        image_info = im.IMatchAPI.get_file_metadata([self.id],image_params)[0]
+
+        for attribute in image_info.keys():
+            match attribute:
+                case "fileName":    # fileName is a special case. Ask for filename, get fileName in results
+                    setattr(self, "filename", image_info[attribute])
+                case "dateTime":
+                    setattr(self, "date_time", datetime.strptime(image_info[attribute],'%Y-%m-%dT%H:%M:%S'))
+                case other:      
+                    setattr(self, attribute, image_info[attribute])
+
         # Retrieve the list of categories the image belongs to.
         self.categories = im.IMatchAPI.get_file_categories([self.id], params={
             'fields' : 'path,description'}
             )[self.id]
-        
+
+        # Retrieve relations for this image. If there is a JPEG, use it instead
+        self.relations = im.IMatchAPI.get_relations(self.id)
+        if self.relations is not None:
+            for relation in self.relations:
+                if relation['format'] == "JPEG":
+                    self.name = relation['name']
+                    self.filename = relation['fileName']
+                    self.format = relation['format']
+                    self.size = relation['size']
+
         # Set the operation for this file.
         self.operation = IMatchImage.OP_NONE
         if self.is_valid:
@@ -123,9 +106,11 @@ class IMatchImage():
                     for genre in splits[1:]:
                         self.keywords.add(genre)
                         if genre != 'astrophotography':
-                            self.add_keyword(genre+"photography")
+                            self.add_keyword(genre+"-photography")
                 case 'Location':
                     try:
+                        self.add_keyword(splits[1]) # Country
+                        self.add_keyword(splits[2]) # Province
                         self.add_keyword(splits[3]) # town
                         self.add_keyword(splits[4]) # location
                     except IndexError:
@@ -142,15 +127,22 @@ class IMatchImage():
             splits = categories['path'].split("|")
             match splits[0]:
                 case 'Image Characteristics':
-                    self.add_keyword(splits.pop()) # Get the leaf
+                    if splits[1] == "technique":
+                        for k in splits[2:]:
+                            self.add_keyword(k) 
+                            if k == "mono":
+                                self.add_keyword("monochrome")
+                            if k == "black-and-white":
+                                self.add_keyword("black")
+                                self.add_keyword("white")
 
     def add_keyword(self, keyword) -> str:
         """Ensure all keywords are added without spaces"""
-        no_spaces_keyword = keyword.replace(" ","")
-        no_ampersand_keyword = no_spaces_keyword.replace("&","-and-")
-        no_dash_keyword = no_ampersand_keyword.replace("-","")
-        self.keywords.add(no_dash_keyword)
-        return no_dash_keyword
+        clean_keyword = keyword.replace(" ","-")
+        clean_keyword = clean_keyword.replace("--", "-")
+        clean_keyword = clean_keyword.replace("&","-and-")
+        self.keywords.add(clean_keyword)
+        return clean_keyword
     
     def is_image_in_category(self, search_category) -> bool:
         found = False
@@ -159,15 +151,7 @@ class IMatchImage():
                 found = True
                 break
         return found
-
-    @property
-    def is_master(self) -> bool:
-        return self.id == self.master_id
-    
-    @property
-    def is_version(self) -> bool:
-        return not self.is_master()
-    
+            
     @property
     def is_on_platform(self) -> bool:
         raise NotImplementedError("Subclasses must implement is_on_platform()")
@@ -221,6 +205,10 @@ class IMatchImage():
         return " | ".join(shooting_info) if len(shooting_info) > 0 else ''
    
     @property
+    def has_versions(self) -> bool:
+        return self.versions is not None
+    
+    @property
     def is_valid(self) -> bool:
         for attribute in ['title', 'description']:
             try:
@@ -239,8 +227,8 @@ class IMatchImage():
             self.errors.append(f"no keywords")
         if not genre_ok:
             self.errors.append(f"missing genre")
-        if self.is_master:
-            self.errors.append("is master")
+        if self.format not in ['JPEG']: # Neither self or relation is JPEG
+            self.errors.append("invalid format")
         return len(self.errors) == 0
 
     @property

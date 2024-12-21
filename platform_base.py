@@ -3,7 +3,7 @@ import logging
 import IMatchAPI as im
 from imatch_image import IMatchImage
 import config
-
+import sys
 class PlatformController():
 
     def __init__(self, platform) -> None:
@@ -14,6 +14,7 @@ class PlatformController():
         self.invalid_images = set()
         self.api = None  # Holds the platform api connection once active
         self.name = platform
+        self.testing = im.IMatchAPI.get_application_variable("imatch_to_socials_testing") == 1  # = 0 live, 1 = testing
 
     def connect(self):
         """Upload and add image to platform"""
@@ -29,7 +30,7 @@ class PlatformController():
         if len(self.images_to_add) == 0:
             return  # Nothing to see here
         
-        if not config.TESTING:        
+        if not self.testing:        
             self.connect()
 
         progress_counter = 1
@@ -39,7 +40,7 @@ class PlatformController():
 
             # Prepare the image for attaching to the status. In Mastodon, "posts/toots" are all status
             # Upload the media, then the status with the media attached. 
-            if config.TESTING:
+            if self.testing:
                 print(f'{self.name}: **TEST** Adding {image.filename} ({image.size/config.MB_SIZE:2.1f} MB) ({progress_counter}/{progress_end}) "{image.title}"')
                 progress_counter += 1       
                 continue                            
@@ -79,14 +80,14 @@ class PlatformController():
         if len(self.images_to_delete) == 0:
             return  # Nothing to see here
         
-        if not config.TESTING:
+        if not self.testing:
             self.connect()
 
         deleted_images = set()
         progress_counter = 1
         progress_end = len(self.images_to_delete)
         for image in self.images_to_delete:
-            if config.TESTING:
+            if self.testing:
                 print(f'{self.name}: **Test** Deleting ({progress_counter}/{progress_end}) "{image.title}"')
                 progress_counter += 1       
                 continue    
@@ -136,14 +137,14 @@ class PlatformController():
         if len(self.images_to_update) == 0:
             return  # Nothing to see here
         
-        if not config.TESTING:
+        if not self.testing:
             self.connect()
 
         progress_counter = 1
         progress_end = len(self.images_to_update)
         for image in self.images_to_update:
             image.prepare_for_upload()
-            if config.TESTING:
+            if self.testing:
                 print(f'{self.name}: **TEST** Updating ({image.size/config.MB_SIZE:2.1f} MB) ({progress_counter}/{progress_end}) "{image.title}"')
                 progress_counter += 1       
                 continue

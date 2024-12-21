@@ -167,7 +167,7 @@ class FlickrController(PlatformController):
         im.IMatchAPI.set_attributes(self.name, image.id, data = {
             'posted' : posted,
             'photo_id' : photo_id,
-            'url' : f"https://www.flickr.com/photos/dcbuchan/{photo_id}"
+            'url' : f"{im.IMatchAPI.get_application_variable("flickr_url")}/{photo_id}"
             })
                             
     def commit_delete(self, image):
@@ -187,6 +187,16 @@ class FlickrController(PlatformController):
             attributes = im.IMatchAPI().get_attributes(self.name, image.id)[0]
             photo_id = attributes['photo_id']
 
+            # Some manually added photos don't have a posted date, so pull it down if needed
+            if 'posted' not in attributes:
+                response = self.api.photos.getInfo(photo_id = photo_id, format = "parsed-json")
+                posted = datetime.fromtimestamp(int(response['photo']['dates']['posted']))
+                im.IMatchAPI.set_attributes(self.name, image.id, data = {
+                    'posted' : str(posted)[:10],
+                    'photo_id' : photo_id,
+                    'url' : f"{im.IMatchAPI.get_application_variable("flickr_url")}/{photo_id}"
+                    })
+                    
             response = self.api.photos.setMeta(
                 title = image.title if image.title != '' else image.name,
                 description = image.full_description,  

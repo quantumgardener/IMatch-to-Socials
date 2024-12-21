@@ -108,7 +108,7 @@ class IMatchAPI:
                 print(f"IMatchAPI: Authenticated to {IMatchAPI.__host_url}")
                 return
             except requests.exceptions.ConnectionError as ce:
-                logging.erorr(f"[IMatchAPI] Unable to connect to IMatch on port {host_port}. Please check IMatch is running and the port is correct.\n\nThe full error was {ce}")
+                logging.error(f"[IMatchAPI] Unable to connect to IMatch on port {host_port}. Please check IMatch is running and the port is correct.\n\nThe full error was {ce}")
                 sys.exit(1)
             except requests.exceptions.RequestException as re:
                 print(re)
@@ -223,7 +223,7 @@ class IMatchAPI:
         params['set'] = set
         params['id'] = IMatchUtility().prepare_filelist(id)
 
-        logging.debug(f"Retreivving attributes for {params['id']}")
+        logging.debug(f"Retrieving attributes for {params['id']}")
         response = cls.get_imatch( '/v1/attributes', params)
 
         # Strip away the wrapping from the result
@@ -316,6 +316,20 @@ class IMatchAPI:
             return response['files'][0]['masters'][0]['files'][0]['id']
         else:
             return None
+        
+    @classmethod
+    def get_relations(cls, id):
+        """ Return a list of relations for the provided photo id """
+
+        params = {}
+        params["id"] = id
+        params["type"] = "versions"
+
+        response = cls.get_imatch( '/v1/files/relations', params)
+        if len(response['files'][0]['versions']) == 1:
+            return response['files'][0]['versions'][0]['files']
+        else:
+            return None
 
     @classmethod
     def file_collections(cls, image_id) -> bool:
@@ -357,8 +371,8 @@ class IMatchAPI:
             op = 'update'
             logging.debug("Updating existing attribute row.")
             tasks = [{
-                'op' : "add",
-                'instanceid': [attributes['instanceId']],
+                'op' : "update",
+                'instanceid': [attributes[0]['instanceId']],
                 'data' : data
             }]
 
