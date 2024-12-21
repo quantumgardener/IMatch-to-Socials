@@ -27,9 +27,12 @@ class FlickrImage(IMatchImage):
         super().prepare_for_upload()
 
         #Set up the text items
+        tmp_description = []
 
-        tmp_description = [self.headline]
-        tmp_description.append('')
+        if self.headline != "":
+            tmp_description.append(self.headline)
+            tmp_description.append('')
+
         tmp_description.append(self.description)
         tmp_description.append('')
 
@@ -70,7 +73,7 @@ class FlickrImage(IMatchImage):
     @property
     def is_valid(self) -> bool:
         result = super().is_valid
-        for attribute in ['headline']:
+        for attribute in []:
             try:
                 if getattr(self, attribute).strip() == '':
                     self.errors.append(f"missing {attribute}")
