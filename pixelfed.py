@@ -22,11 +22,14 @@ class PixelfedImage(IMatchImage):
         """Build variables ready for uploading."""
         super().prepare_for_upload()
 
+        # Remove spaces from keywords
+        self.keywords = [item.replace(" ","") for item in self.keywords]
+
         if self.circadatecreated != "":
             circa = "ca. "
         else:
             circa = ""
-        tmp_description = [f"{self.title} -- {self.description} (Taken {circa}{self.date_time.strftime("%#d %B %Y")})"]
+        tmp_description = [f"{self.title} -- {self.headline} (Taken {circa}{self.date_time.strftime("%#d %B %Y")})"]
         tmp_description.append('')
         if len(self.keywords) > 0:
             tmp_description.append(" ".join(["#" + keyword for keyword in self.keywords]))  # Ensure pixelfed keywords are hashtags
@@ -46,7 +49,7 @@ class PixelfedImage(IMatchImage):
     @property
     def is_valid(self) -> bool:
         result = super().is_valid
-        for attribute in ['headline']:
+        for attribute in []:
             try:
                 if getattr(self, attribute).strip() == '':
                     self.errors.append(f"missing {attribute}")
@@ -117,7 +120,7 @@ class PixelfedController(PlatformController):
             # Upload the media, then the status with the media attached. 
             media = self.api.media_post(  
                 media_file = image.filename,
-                description= image.headline
+                description= image.description
             )
 
             # Create a new status with the uploaded image                   
@@ -173,7 +176,7 @@ class PixelfedController(PlatformController):
 
             media = self.api.media_update(
                 id = media_id,  
-                description= image.headline
+                description= image.description
             )
 
             # Update the status with new text
