@@ -4,9 +4,9 @@ from pprint import pprint
 
 import IMatchAPI as im
 import config
+from keyword_manager import Keyword_Manager as km
 
 logging.getLogger('urllib3').setLevel(logging.INFO) # Don't want this debug level to cloud ours
-
 
 class IMatchImage():
 
@@ -102,29 +102,22 @@ class IMatchImage():
         for keyword in self.hierarchical_keywords:
             splits = keyword.split("|")
             match splits[0]:
-                case 'art':
-                    for artform in splits:
-                        self.add_keyword(artform)
                 case 'genre':
                     # Genre is tagged with itself and with "photography appended"
                     for genre in splits[1:]:
                         self.keywords.add(genre)
                         if genre != 'astrophotography':
-                            self.add_keyword(genre+"-photography")
+                            self.add_keyword(genre+" photography")
                 case 'Location':
                     try:
-                        self.add_keyword(splits[1]) # Country
-                        self.add_keyword(splits[2]) # Province
-                        self.add_keyword(splits[3]) # town
-                        self.add_keyword(splits[4]) # location
+                        for location in splits[1:5]:
+                            self.add_keyword(location) # Country
                     except IndexError:
                         pass
-                case 'nature':
-                    for nature in splits[1:]:
-                        self.add_keyword(nature) # Add each keyword
-                case 'toys and games':
-                    for nature in splits[1:]:
-                        self.add_keyword(nature) # Add each keyword
+                case other:
+                    if splits[0] in km.keyword_list():
+                        for k in splits[1:]:
+                            self.add_keyword(k) # Add each keyword
 
         # Add certain categories as keywords
         for categories in self.categories:
@@ -140,11 +133,13 @@ class IMatchImage():
                                 self.add_keyword("black")
                                 self.add_keyword("white")
 
-    def add_keyword(self, keyword) -> str:
-        """Ensure all keywords are added without spaces"""
-        clean_keyword = keyword.replace(" ","-")
-        clean_keyword = clean_keyword.replace("--", "-")
-        clean_keyword = clean_keyword.replace("&","-and-")
+    def add_keyword(self, keyword, dash=False) -> str:
+        if dash:
+            clean_keyword = keyword.replace(" ","-")
+            clean_keyword = clean_keyword.replace("--", "-")
+            clean_keyword = clean_keyword.replace("&","-and-")
+        else:
+            clean_keyword = keyword
         self.keywords.add(clean_keyword)
         return clean_keyword
     
