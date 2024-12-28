@@ -4,7 +4,6 @@ from pprint import pprint
 
 import IMatchAPI as im
 import config
-from keyword_manager import Keyword_Manager as km
 
 logging.getLogger('urllib3').setLevel(logging.INFO) # Don't want this debug level to cloud ours
 
@@ -43,22 +42,27 @@ class IMatchImage():
             "varcircadatecreated" : "{File.MD.XMP::iptcExt\\CircaDateCreated\\CircaDateCreated\\0}"
             }
         
+        logging.debug("Querying image parameters")
         image_info = im.IMatchAPI.get_file_metadata([self.id],image_params)[0]
 
         for attribute in image_info.keys():
             match attribute:
                 case "fileName":    # fileName is a special case. Ask for filename, get fileName in results
                     setattr(self, "filename", image_info[attribute])
+                    logging.debug(f'Setting filename to {image_info[attribute]}')
                 case "dateTime":
                     setattr(self, "date_time", datetime.strptime(image_info[attribute],'%Y-%m-%dT%H:%M:%S'))
+                    logging.debug(f'Setting date_time to {image_info[attribute]}')
                 case other:      
                     setattr(self, attribute, image_info[attribute])
+                    logging.debug(f'Setting {attribute} to {image_info[attribute]}')
 
         # Retrieve the list of categories the image belongs to.
+        logging.debug("Querying characteristics")
         self.categories = im.IMatchAPI.get_file_categories([self.id], params={
             'fields' : 'path,description'}
             )[self.id]
-
+        
         # Retrieve relations for this image. If there is a JPEG, use it instead
         self.relations = im.IMatchAPI.get_relations(self.id)
         if self.relations is not None:
@@ -98,40 +102,48 @@ class IMatchImage():
        
     def prepare_for_upload(self) -> None:
         """Build variables ready for uploading."""
-        self.keywords = set()  # These are the keywords to output. self.hierachy_keywords is what comes in
-        for keyword in self.hierarchical_keywords:
-            splits = keyword.split("|")
+        self.keywords = set()  # These are the keywords to output. self.hierachy_keywords is what comes in.
+        try:
+            for keyword in self.hierarchical_keywords:
+                splits = keyword.split("|")
+                match splits[0]:
+                    case other:
+                        for k in splits[1:]:
+                            self.add_keyword(k) # Add each keyword
+        except AttributeError:
+            logging.error("hierarchical keywords missing on image but image has been marked valid.")
+
+        # Add certain categories as keywords
+        logging.debug("Processing base categories")
+        for categories in self.categories:
+            splits = categories['path'].split("|")
+            logging.debug(splits)
             match splits[0]:
-                case 'genre':
-                    # Genre is tagged with itself and with "photography appended"
-                    for genre in splits[1:]:
-                        self.keywords.add(genre)
-                        if genre != 'astrophotography':
-                            self.add_keyword(genre+" photography")
+                case 'Event':
+                    if splits[1] in ['Festival','Celebration']:
+                        self.add_keyword(splits[2]) 
+                        logging.debug(f'Added {splits[2]} to event keywords')
                 case 'Location':
                     try:
                         for location in splits[1:5]:
-                            self.add_keyword(location) # Country
+                            self.add_keyword(location) 
+                            logging.debug(f'Added {location} to location keywords')
                     except IndexError:
                         pass
-                case other:
-                    if splits[0] in km.keyword_list():
-                        for k in splits[1:]:
-                            self.add_keyword(k) # Add each keyword
-
-        # Add certain categories as keywords
-        for categories in self.categories:
-            splits = categories['path'].split("|")
-            match splits[0]:
                 case 'Image Characteristics':
-                    if splits[1] == "technique":
-                        for k in splits[2:]:
-                            self.add_keyword(k) 
-                            if k == "mono":
-                                self.add_keyword("monochrome")
-                            if k == "black-and-white":
-                                self.add_keyword("black")
-                                self.add_keyword("white")
+                    match splits[1]:
+                        case "Genre":
+                            # Genre is tagged with itself and with "photography appended"
+                            for genre in splits[2:]:
+                                self.keywords.add(genre)
+                                logging.debug(f'Added {genre} genre to keywords')
+                                if genre != 'astrophotography':
+                                    self.add_keyword(genre+" photography")
+                                    logging.debug(f'Added {genre} photography genre to keywords')
+                        case "Technique":
+                            for technique in splits[2:]:
+                                self.add_keyword(technique) 
+                                logging.debug(f'Added {technique} technique to image characterisic keywords')
 
     def add_keyword(self, keyword, dash=False) -> str:
         if dash:
@@ -209,19 +221,23 @@ class IMatchImage():
     
     @property
     def is_valid(self) -> bool:
-        for attribute in ['title', 'description']:
+        for attribute in ['title', 'description', 'hierarchical_keywords']:
             try:
-                if getattr(self, attribute).strip() == '':
-                    self.errors.append(f"missing {attribute}")
-            except AttributeError:
+                value  = getattr(self, attribute)
+                if isinstance(value, list):
+                    if len(value) == 0:
+                        self.errors.append(f"missing {attribute}")    
+                if isinstance(value, str):
+                    if value.strip() == '':
+                        self.errors.append(f"missing {attribute}")
+            except AttributeError as e:
                 self.errors.append(f"missing {attribute}")
         genre_ok = False
         try:
-            for keyword in self.hierarchical_keywords:
-                splits = keyword.split("|")
-                match splits[0]:
-                    case 'genre':
-                        genre_ok = True
+            for categories in self.categories:
+                splits = categories['path'].split("|")
+                if splits[0] == "Image Characteristics" and splits[1] == "Genre":
+                    genre_ok = True
         except AttributeError:
             self.errors.append(f"no keywords")
         if not genre_ok:
