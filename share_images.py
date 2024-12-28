@@ -7,7 +7,7 @@ import IMatchAPI as im
 import pixelfed
 
 logging.basicConfig(
-    # stream = sys.stdout,
+    stream = sys.stdout,
     level = logging.INFO,
     format = '%(levelname)8s | %(message)s'
     )
