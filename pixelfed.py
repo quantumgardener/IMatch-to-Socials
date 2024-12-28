@@ -24,6 +24,7 @@ class PixelfedImage(IMatchImage):
 
         # Remove spaces from keywords
         self.keywords = [item.replace(" ","") for item in self.keywords]
+        self.keywords.append("photography")
 
         if self.circadatecreated != "":
             circa = "ca. "
