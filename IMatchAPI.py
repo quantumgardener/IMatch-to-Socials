@@ -171,7 +171,7 @@ class IMatchAPI:
             response = cls.post_imatch( '/v1/categories/assign', params)
             if response is not None:
                 if response['result'] == "ok":
-                    logging.debug("Success")
+                    logging.debug(f'Image assigned to {category}')
                     return
             else:
                 print("There was an error removing images from the category. Please see message above.")
@@ -239,7 +239,7 @@ class IMatchAPI:
 
         params['path'] = category
         
-        logging.debug(f"Retreivving category information for {category}")
+        logging.debug(f"Retrieving category information for {category}")
         response = cls.get_imatch( '/v1/categories', params)
         return response['categories']
 

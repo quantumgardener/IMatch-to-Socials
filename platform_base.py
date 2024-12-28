@@ -146,11 +146,17 @@ class PlatformController():
         progress_end = len(self.images_to_update)
         for image in self.images_to_update:
             image.prepare_for_upload()
+            if image.operation == IMatchImage.OP_UPDATE:
+                action = "all"
+            else:
+                action = "metadata"
+        
             if self.testing:
-                print(f'{self.name}: **TEST** Updating ({image.size/config.MB_SIZE:2.1f} MB) ({progress_counter}/{progress_end}) "{image.title}"')
+                
+                print(f'{self.name}: **TEST** Updating {action} for {image.filename} ({image.size/config.MB_SIZE:2.1f} MB) ({progress_counter}/{progress_end}) "{image.title}"')
                 progress_counter += 1       
                 continue
-            print(f'{self.name}: Updating {image.filename} ({image.size/config.MB_SIZE:2.1f} MB) ({progress_counter}/{progress_end}) "{image.title}"')
+            print(f'{self.name}: Updating {action} for {image.filename} ({image.size/config.MB_SIZE:2.1f} MB) ({progress_counter}/{progress_end}) "{image.title}"')
 
             self.commit_update(image)
 
