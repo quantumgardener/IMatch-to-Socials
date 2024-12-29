@@ -68,6 +68,7 @@ class IMatchImage():
         if self.relations is not None:
             for relation in self.relations:
                 if relation['format'] == "JPEG":
+                    logging.debug(f'Replacing {self.name} with {relation['name']}')
                     self.name = relation['name']
                     self.filename = relation['fileName']
                     self.format = relation['format']
@@ -105,11 +106,8 @@ class IMatchImage():
         self.keywords = set()  # These are the keywords to output. self.hierachy_keywords is what comes in.
         try:
             for keyword in self.hierarchical_keywords:
-                splits = keyword.split("|")
-                match splits[0]:
-                    case other:
-                        for k in splits[1:]:
-                            self.add_keyword(k) # Add each keyword
+                for k in keyword.split("|"):
+                    self.add_keyword(k) 
         except AttributeError:
             logging.error("hierarchical keywords missing on image but image has been marked valid.")
 
