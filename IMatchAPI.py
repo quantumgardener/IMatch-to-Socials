@@ -78,6 +78,11 @@ class IMatchAPI:
         COLLECTION_PINS_BLUE : "Pins|Blue",
         COLLECTION_PINS_NONE : "Pins|None",
         }   
+    
+    FORMAT_AFPHOTO = "AFPHOTO"
+    FORMAT_DNG = "DNG"
+    FORMAT_JPEG = "JPEG"
+    FORMAT_WEBP = "WebP"
 
     def __init__(self, host_port=50519) -> None:
         """ Authenticate against IMWS and set the __auth_token variable

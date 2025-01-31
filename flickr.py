@@ -80,8 +80,6 @@ class FlickrImage(IMatchImage):
             except AttributeError:
                 self.errors.append(f"missing {attribute}")
         if self.size > FlickrImage.__MAX_SIZE:
-            logging.error(f'{self.controller.name}: Skipping {self.name} is too large to upload: {self.size/config.MB_SIZE:2.1f} MB. Max is {FlickrImage.__MAX_SIZE/config.MB_SIZE:2.1f} MB.')
-            print(f'{self.controller.name}: Skipping {self.name} is too large to upload: {self.size/config.MB_SIZE:2.1f} MB. Max is {FlickrImage.__MAX_SIZE/config.MB_SIZE:2.1f} MB.')
             self.errors.append(f"file too large")
         return len(self.errors) == 0 and result
 
@@ -115,6 +113,8 @@ class FlickrController(PlatformController):
             self.organisation_categories[category] = {}
             for imatch_cat in category_info[0]['children']:
                 self.organisation_categories[category][imatch_cat['description']] = imatch_cat
+
+        self.upload_format = im.IMatchAPI.FORMAT_JPEG
 
     def connect(self):
         if self.api is not None:

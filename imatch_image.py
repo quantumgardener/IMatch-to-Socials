@@ -63,20 +63,23 @@ class IMatchImage():
             'fields' : 'path,description'}
             )[self.id]
         
-        # Retrieve relations for this image. If there is a JPEG, use it instead
+        # Retrieve relations for this image. If there is an image in the preferred upload format for the
+        # image controller, use it
         self.relations = im.IMatchAPI.get_relations(self.id)
         if self.relations is not None:
             for relation in self.relations:
-                if relation['format'] == "JPEG":
-                    logging.debug(f'Replacing {self.name} with {relation['name']}')
-                    logging.debug(f'Setting name to {relation['format']}')
-                    self.name = relation['name']
-                    logging.debug(f'Setting filename to {relation['fileName']}')
-                    self.filename = relation['fileName']
-                    logging.debug(f'Setting format to {relation['format']}')
-                    self.format = relation['format']
-                    logging.debug(f'Setting size to {relation['format']}')
-                    self.size = relation['size']
+                if relation['format'] in self.controller.allowed_formats:
+                    if self.format != self.controller.preferred_format:
+                        # We are ok to replace the existing format. If it is already the preferred, we don't replace again
+                            logging.debug(f'Replacing {self.name} with {relation['name']}')
+                            logging.debug(f'Setting name to {relation['format']}')
+                            self.name = relation['name']
+                            logging.debug(f'Setting filename to {relation['fileName']}')
+                            self.filename = relation['fileName']
+                            logging.debug(f'Setting format to {relation['format']}')
+                            self.format = relation['format']
+                            logging.debug(f'Setting size to {relation['size']}')
+                            self.size = relation['size']
 
         # Set the operation for this file.
         self.operation = IMatchImage.OP_NONE
@@ -131,7 +134,9 @@ class IMatchImage():
                             self.add_keyword(location) 
                             logging.debug(f'Added {location} to location keywords')
                     except IndexError:
+                        logging.debug(f'Index error on {splits} for location')
                         pass
+                    setattr(self, 'location', ', '.join(splits[::-1][-4:-1]))
                 case 'Image Characteristics':
                     match splits[1]:
                         case "Genre":
@@ -240,7 +245,7 @@ class IMatchImage():
             self.errors.append(f"no keywords")
         if not genre_ok:
             self.errors.append(f"missing genre")
-        if self.format not in ['JPEG']: # Neither self or relation is JPEG
+        if self.format not in self.controller.allowed_formats:
             self.errors.append("invalid format")
         return len(self.errors) == 0
 

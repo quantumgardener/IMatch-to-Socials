@@ -6,10 +6,11 @@ import flickr
 import IMatchAPI as im
 import pixelfed
 import my_mastodon
+import quantum
 
 logging.basicConfig(
     stream = sys.stdout,
-    level = logging.DEBUG,
+    level = logging.INFO,
     format = '%(levelname)8s | %(message)s'
     )
 
@@ -27,7 +28,11 @@ class Factory():
         'mastodon' : {
             'image' : my_mastodon.MastodonImage,
             'controller' : my_mastodon.MastodonController
-        }
+        },
+        'quantum' : {
+            'image' : quantum.QuantumImage,
+            'controller' : quantum.QuantumController
+        },
     }
 
     def __init__(self) -> None:
@@ -71,7 +76,8 @@ if __name__ == "__main__":
     else:
         # Do the lot
         for platform in Factory.platforms.keys():
-            platform_controllers.add(Factory.build_controller(platform))
+            if platform not in ['mastodon','pixelfed']: ## currently bugged at server end
+                platform_controllers.add(Factory.build_controller(platform))
 
     for controller in platform_controllers:
         print( "--------------------------------------------------------------------------------------")
@@ -79,7 +85,7 @@ if __name__ == "__main__":
         try:
             for image_id in im.IMatchAPI.get_categories(im.IMatchUtility.build_category([config.ROOT_CATEGORY,controller.name]))['directFiles']:
                 image = Factory.build_image(image_id, controller)
-            print(f"{controller.name}: {controller.stats['total']} images gathered from IMatch.")
+            print(f"{controller.name}: {controller.stats['total']} images gathered from IMatch to action.")
 
             controller.classify_images()
             controller.add_images()

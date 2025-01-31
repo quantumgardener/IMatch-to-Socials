@@ -28,6 +28,7 @@
             <br/>
             <button id="btn-all" class="btn btn-default">Run <strong>All Platforms</strong></button>
             <button id="btn-flickr" class="btn btn-default">Run <strong>flickr only</strong></button>
+            <button id="btn-quantum" class="btn btn-default">Run <strong>quantum only</strong></button>
             <button id="btn-mastodon" class="btn btn-default">Run <strong>mastodon only</strong></button>
             <button id="btn-pixelfed" class="btn btn-default">Run <strong>pixelfed only</strong></button>
             <!-- In these pre's we display the server response and data as needed -->
@@ -59,6 +60,10 @@
 
                 $('#btn-flickr').click(function() {
                     call_python(script_path, "flickr")
+                });
+
+                $('#btn-quantum').click(function() {
+                    call_python(script_path, "quantum")
                 });
 
                 $('#btn-mastodon').click(function() {
