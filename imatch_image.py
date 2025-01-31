@@ -20,7 +20,7 @@ class IMatchImage():
     def __init__(self, id, controller) -> None:
         self.id = id
         self.errors = []    # hold any errors raised during the process
-        self.controller = controller
+        self.controller = controller 
         self.controller.register_image(self)
 
         # Get this image's information from IMatch. Process and save each
@@ -69,9 +69,13 @@ class IMatchImage():
             for relation in self.relations:
                 if relation['format'] == "JPEG":
                     logging.debug(f'Replacing {self.name} with {relation['name']}')
+                    logging.debug(f'Setting name to {relation['format']}')
                     self.name = relation['name']
+                    logging.debug(f'Setting filename to {relation['fileName']}')
                     self.filename = relation['fileName']
+                    logging.debug(f'Setting format to {relation['format']}')
                     self.format = relation['format']
+                    logging.debug(f'Setting size to {relation['format']}')
                     self.size = relation['size']
 
         # Set the operation for this file.
@@ -123,7 +127,7 @@ class IMatchImage():
                         logging.debug(f'Added {splits[2]} to event keywords')
                 case 'Location':
                     try:
-                        for location in splits[1:5]:
+                        for location in splits[1:4]:
                             self.add_keyword(location) 
                             logging.debug(f'Added {location} to location keywords')
                     except IndexError:
@@ -138,10 +142,6 @@ class IMatchImage():
                                 if genre != 'astrophotography':
                                     self.add_keyword(genre+" photography")
                                     logging.debug(f'Added {genre} photography genre to keywords')
-                        case "Technique":
-                            for technique in splits[2:]:
-                                self.add_keyword(technique) 
-                                logging.debug(f'Added {technique} technique to image characterisic keywords')
 
     def add_keyword(self, keyword, dash=False) -> str:
         if dash:

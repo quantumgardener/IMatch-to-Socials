@@ -5,10 +5,11 @@ import config
 import flickr
 import IMatchAPI as im
 import pixelfed
+import my_mastodon
 
 logging.basicConfig(
     stream = sys.stdout,
-    level = logging.INFO,
+    level = logging.DEBUG,
     format = '%(levelname)8s | %(message)s'
     )
 
@@ -22,6 +23,10 @@ class Factory():
         'pixelfed' : {
             'image' : pixelfed.PixelfedImage,
             'controller' : pixelfed.PixelfedController
+        },
+        'mastodon' : {
+            'image' : my_mastodon.MastodonImage,
+            'controller' : my_mastodon.MastodonController
         }
     }
 
@@ -71,30 +76,33 @@ if __name__ == "__main__":
     for controller in platform_controllers:
         print( "--------------------------------------------------------------------------------------")
         print(f"{controller.name}: Gathering images from IMatch.")
-        for image_id in im.IMatchAPI.get_categories(im.IMatchUtility.build_category([config.ROOT_CATEGORY,controller.name]))['directFiles']:
-            image = Factory.build_image(image_id, controller)
-        print(f"{controller.name}: {controller.stats['total']} images gathered from IMatch.")
+        try:
+            for image_id in im.IMatchAPI.get_categories(im.IMatchUtility.build_category([config.ROOT_CATEGORY,controller.name]))['directFiles']:
+                image = Factory.build_image(image_id, controller)
+            print(f"{controller.name}: {controller.stats['total']} images gathered from IMatch.")
 
-        controller.classify_images()
-        controller.add_images()
-        controller.update_images()
-        controller.delete_images()
-        controller.process_errors()
-        controller.summarise()
+            controller.classify_images()
+            controller.add_images()
+            controller.update_images()
+            controller.delete_images()
+            controller.process_errors()
+            controller.summarise()
+        except TypeError: 
+            print(f"{controller.name}: 0 images gathered from IMatch.")
 
-    stats = {}
-    for controller in platform_controllers:
-        platform_stats = controller.stats
-        for stat in platform_stats:
-            try:
-                stats[stat] += platform_stats[stat]
-            except KeyError:
-                stats[stat] = platform_stats[stat]
+    # stats = {}
+    # for controller in platform_controllers:
+    #     platform_stats = controller.stats
+    #     for stat in platform_stats:
+    #         try:
+    #             stats[stat] += platform_stats[stat]
+    #         except KeyError:
+    #             stats[stat] = platform_stats[stat]
             
-    print( "--------------------------------------------------------------------------------------")
-    print(f"Final summary of images processed")
-    for val in stats.keys():
-        print(f"-- {stats[val]} {val} images")
+    # print( "--------------------------------------------------------------------------------------")
+    # print(f"Final summary of images processed")
+    # for val in stats.keys():
+    #     print(f"-- {stats[val]} {val} images")
     
     print("--------------------------------------------------------------------------------------")
     print("Done.")

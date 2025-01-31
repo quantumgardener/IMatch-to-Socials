@@ -10,7 +10,7 @@ from platform_base import PlatformController
 import IMatchAPI as im
 import config
 
-class PixelfedImage(IMatchImage):
+class MastodonImage(IMatchImage):
 
     __MAX_SIZE = 15 * config.MB_SIZE
 
@@ -34,7 +34,7 @@ class PixelfedImage(IMatchImage):
         tmp_description = [f"{self.title} -- {self.headline} (Taken {circa}{self.date_time.strftime("%#d %B %Y")})"]
         tmp_description.append('')
         if len(self.keywords) > 0:
-            tmp_description.append(" ".join(["#" + keyword for keyword in self.keywords]))  # Ensure pixelfed keywords are hashtags
+            tmp_description.append(" ".join(["#" + keyword for keyword in self.keywords]))  # Ensure keywords are hashtags
             tmp_description.append('')
 
         shooting_info = self.shooting_info
@@ -57,18 +57,18 @@ class PixelfedImage(IMatchImage):
                     self.errors.append(f"missing {attribute}")
             except AttributeError:
                 self.errors.append(f"missing {attribute}")
-        if self.size > PixelfedImage.__MAX_SIZE:
-            logging.error(f'{self.controller.name}: Skipping {self.name} is too large to upload: {self.size/config.MB_SIZE:2.1f} MB. Max is {PixelfedImage.__MAX_SIZE/config.MB_SIZE:2.1f} MB.')
-            print(f'{self.controller.name}: Skipping {self.name} is too large to upload: {self.size/config.MB_SIZE:2.1f} MB. Max is {PixelfedImage.__MAX_SIZE/config.MB_SIZE:2.1f} MB.')
+        if self.size > MastodonImage.__MAX_SIZE:
+            logging.error(f'{self.controller.name}: Skipping {self.name} is too large to upload: {self.size/config.MB_SIZE:2.1f} MB. Max is {MastodonImage.__MAX_SIZE/config.MB_SIZE:2.1f} MB.')
+            print(f'{self.controller.name}: Skipping {self.name} is too large to upload: {self.size/config.MB_SIZE:2.1f} MB. Max is {MastodonImage.__MAX_SIZE/config.MB_SIZE:2.1f} MB.')
             self.errors.append(f"file too large")
         return len(self.errors) == 0 and result
 
     @property
     def is_on_platform(self) -> bool:
-        res = im.IMatchAPI.get_attributes("pixelfed", self.id)
+        res = im.IMatchAPI.get_attributes("mastodon", self.id)
         return len(res) != 0
 
-class PixelfedController(PlatformController):
+class MastodonController(PlatformController):
     
     def __init__(self, platform) -> None:
         super().__init__(platform)
@@ -81,13 +81,13 @@ class PixelfedController(PlatformController):
             # https://www.photools.com/help/imatch/index.html#var_basics.htm
             try:
                 print(f"{self.name}: Work to do -- Connecting to platform.")
-                access_token = im.IMatchAPI.get_application_variable("pixelfed_token")
+                access_token = im.IMatchAPI.get_application_variable("mastodon_token")
                 if access_token == "":
-                    raise ValueError("pixelfed_token in empty")
-                api_base_url = im.IMatchAPI.get_application_variable("pixelfed_url")
+                    raise ValueError("mastodon_token in empty")
+                api_base_url = im.IMatchAPI.get_application_variable("mastodon_url")
                 if api_base_url == "":
-                    raise ValueError("pixelfed_url token in empty")   
-                pixelfed = mastodon.Mastodon(
+                    raise ValueError("mastodon_url token in empty")   
+                server = mastodon.Mastodon(
                     access_token = access_token,
                     api_base_url = api_base_url
                 )
@@ -98,19 +98,19 @@ class PixelfedController(PlatformController):
                 logging.error(f"{self.name} unauthorised for connection.")
                 sys.exit(1)
 
-
             # Fetch my account details. Serves as a good check of connection details
             # before bothering to upload images. If it fails here, nothing else will work.
             try:
-                print(f"{self.name}: Verifying pixelfed account credentials.")
-                account = pixelfed.account_verify_credentials()
+                print(f"{self.name}: Verifying mastodon account credentials.")
+                account = server.account_verify_credentials()
                 print(f"{self.name}: Verified. Connected to {account['url']}.")
             except mastodon.MastodonNetworkError as mne:
-                logging.error(f"{self.name}: Unable to obtain account details. Check URL {im.IMatchAPI.get_application_variable("pixelfed_url")}.")
+                logging.error(f"{self.name}: Unable to obtain account details. Check URL {im.IMatchAPI.get_application_variable("mastodon_url")}.")
                 logging.error(mne)
                 sys.exit(1)
-            except mastodon.MastodonAPIError:
+            except mastodon.MastodonAPIError as me:
                 logging.error(f"{self.name}: Unable to access credentials. Check token.")
+                logging.error(me)
                 sys.exit(1)
             except Exception as e:
                 logging.error(f"{self.name}: An unexpected error occurred: {e}")
@@ -122,8 +122,8 @@ class PixelfedController(PlatformController):
             # private = Visible to followers only, and to any mentioned users.
             # direct = Visible only to mentioned users.
 
-            self._visibility = im.IMatchAPI.get_application_variable("pixelfed_visibility")
-            self.api = pixelfed
+            self._visibility = im.IMatchAPI.get_application_variable("mastodon_visibility")
+            self.api = server
 
     def commit_add(self, image):
         """Make the api call to commit the image to the platform, and update IMatch with reference details"""

@@ -23,11 +23,12 @@
     <body>
         <div class="container-fluid">
             <h2><i class="fa fa-info-circle"></i> IMatch to Socials</h2>
-            <p class="lead">This app adds, updates or deletes images from pixelfed and flickr platforms.</p>
+            <p class="lead">This app adds, updates or deletes images from the listed social platforms.</p>
             <p>An external Python script is called to execute the changes. Script location: <code id="script_path"></code></p>
             <br/>
             <button id="btn-all" class="btn btn-default">Run <strong>All Platforms</strong></button>
             <button id="btn-flickr" class="btn btn-default">Run <strong>flickr only</strong></button>
+            <button id="btn-mastodon" class="btn btn-default">Run <strong>mastodon only</strong></button>
             <button id="btn-pixelfed" class="btn btn-default">Run <strong>pixelfed only</strong></button>
             <!-- In these pre's we display the server response and data as needed -->
             <h3>Script Response <i id="animation" class="fa fa-circle-o-notch fa-spin fa-fw text-muted" style="display:none"></i></h3>
@@ -58,6 +59,10 @@
 
                 $('#btn-flickr').click(function() {
                     call_python(script_path, "flickr")
+                });
+
+                $('#btn-mastodon').click(function() {
+                    call_python(script_path, "mastodon")
                 });
 
                 $('#btn-pixelfed').click(function() {

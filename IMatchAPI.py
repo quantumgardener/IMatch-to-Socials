@@ -266,14 +266,22 @@ class IMatchAPI:
         params['fields'] = 'files,directfiles'
 
         logging.debug(f'Retrieving list of files in the {path} category.')
-        response = cls.get_imatch( '/v1/categories', params)
-        if len(response['categories']) == 0:
-            logging.debug("0 files found.")
-            return []
-        else:
-            # Get straight to the data if present
-            logging.debug(f"{len(response['categories'][0]['files'])} files found.")
-            return response['categories'][0]
+        try:
+            response = cls.get_imatch( '/v1/categories', params)
+            if len(response['categories']) == 0:
+                # This also fires if category does not exist
+                logging.debug("0 files found.")
+                return []
+            else:
+                # Get straight to the data if present
+                logging.debug(f"{len(response['categories'][0]['files'])} files found.")
+                return response['categories'][0]
+        except requests.exceptions.RequestException as re:
+            print(re)
+            print(response)
+        except Exception as ex:
+            print(ex)
+
 
     @classmethod
     def get_categories_children(cls, path):
