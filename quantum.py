@@ -6,11 +6,16 @@ import os
 import re
 import shutil
 import sys
+from PIL import Image
 
 from imatch_image import IMatchImage
 from platform_base import PlatformController
 import IMatchAPI as im
 import config
+
+IMAGE_WIDTH = 800
+IMAGE_FORMAT = "WEBP"
+THUMBNAIL_WIDTH = 150
 
 class QuantumImage(IMatchImage):
 
@@ -83,30 +88,43 @@ class QuantumController(PlatformController):
         if not match:
             raise ValueError(f'{self.name}: Unable to extract digits from filename')
         image.media_id = match.group(1)
-        image.short_filename = f'{image.media_id}.{image.format.lower()}'
-        image.target_filename = os.path.join(self.api, image.short_filename)
+        image.short_filename = f'{image.media_id}_{IMAGE_WIDTH}.{IMAGE_FORMAT.lower()}'
+        image.thumbnail_filename = f'{image.media_id}_{THUMBNAIL_WIDTH}.{IMAGE_FORMAT.lower()}'
         image.target_md = os.path.join(self.api,f'{image.media_id}.md')
-        logging.debug(f'{self.name}: Target file is {image.target_filename}')
 
     def write_markdown(self, image):
         template_values = {
-            'aperture' : '{0:.3g}'.format(float(image.aperture)),
+            'aperture' : '{0:.3g}'.format(float(image.aperture)) if image.aperture != "" else "__unknown__",
             'camera' : image.model,
             'date_taken' : image.date_time.strftime('%Y-%m-%dT%H:%M:%S'),
-            'description' : f'{image.headline} {image.description}',
-            'focal_length' : image.focal_length,
+            'description' : f'{image.headline} {image.description.replace("\n", " ")}',
+            'focal_length' : image.focal_length if image.focal_length != "" else "__unknown__",
             'image_path' : image.short_filename,
-            'iso' : image.iso,
-            'lens' : image.lens,
+            'iso' : image.iso if image.iso != "" else "__unknown__",
+            'lens' : image.lens if image.lens != "" else "__unknown__",
             'location' : image.location,
-            'shutter_speed' : image.shutter_speed,
+            'shutter_speed' : image.shutter_speed if image.shutter_speed != "" else "__unknown__",
             'title' : image.title,
+            'thumbnail' : image.thumbnail_filename
         }
 
         # OK to overwrite this every time
         md_content = self.template_content.format(**template_values)
+        ## Clean out lines with "unknown"
+        lines = md_content.split("\n")
+        filtered_lines = [line for line in lines if "__unknown__" not in line]
+        filtered_markdown = "\n".join(filtered_lines)
+
         with open(image.target_md, 'w') as file:
-            file.write(md_content)
+            file.write(filtered_markdown)
+
+    def convert_and_resize_image(self, input_path, output_path, max_width):       
+        with Image.open(input_path) as img:
+            width, height = img.size
+            aspect_ratio = height / width
+            new_height = int(max_width * aspect_ratio)
+            img = img.resize((max_width, new_height), Image.LANCZOS)
+            img.save(output_path, format=IMAGE_FORMAT)
 
     def connect(self):
         if self.api is not None:
@@ -129,9 +147,15 @@ class QuantumController(PlatformController):
         try:
             self.prepare_file_information(image)
             
-            if not os.path.exists(image.target_filename):
+            target_filename = os.path.join(self.api, image.short_filename)
+            if not os.path.exists(target_filename):
                 # Add only if not there. We use update flags to replace an existing file
-                shutil.copy(image.filename, image.target_filename)
+                self.convert_and_resize_image(image.filename, target_filename, IMAGE_WIDTH)
+
+            thumbnail_filename = os.path.join(self.api, image.thumbnail_filename)
+            if not os.path.exists(thumbnail_filename):
+                # Add only if not there. We use update flags to replace an existing file
+                self.convert_and_resize_image(image.filename, thumbnail_filename, THUMBNAIL_WIDTH)
 
             self.write_markdown(image)
             
@@ -153,8 +177,12 @@ class QuantumController(PlatformController):
         try:
             self.prepare_file_information(image)
 
-            if os.path.exists(image.target_filename):
-                os.remove(image.target_filename)
+            target_filename = os.path.join(self.api, image.short_filename)
+            if os.path.exists(target_filename):
+                os.remove(target_filename)
+            thumbnail_filename = os.path.join(self.api, image.thumbnail_filename)
+            if os.path.exists(thumbnail_filename):
+                os.remove(thumbnail_filename)
             if os.path.exists(image.target_md):
                 os.remove(image.target_md)
 
@@ -166,10 +194,16 @@ class QuantumController(PlatformController):
         """Make the api call to update the image on the platform"""
         try:
             self.prepare_file_information(image)
-            
-            shutil.copy(image.filename, image.target_filename)
+
+            if image.operation == IMatchImage.OP_UPDATE:
+                target_filename = os.path.join(self.api, image.short_filename)
+                self.convert_and_resize_image(image.filename, target_filename, IMAGE_WIDTH)
+
+                thumbnail_filename = os.path.join(self.api, image.thumbnail_filename)
+                self.convert_and_resize_image(image.filename, thumbnail_filename, THUMBNAIL_WIDTH)
 
             self.write_markdown(image)
+
         except KeyError:
             logging.error(f"{self.name}: validating an image field somewhere.")
             sys.exit()

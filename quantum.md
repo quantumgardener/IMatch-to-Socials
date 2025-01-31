@@ -4,6 +4,7 @@ datetime: {date_taken}
 updated: 
 title: {title}
 description: {description}
+thumbnail: {thumbnail}
 cssclasses:
   - photo-page
 ---
