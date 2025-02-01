@@ -35,6 +35,7 @@ class IMatchImage():
             "varheadline" : "{File.MD.headline}",
             "variso" : "{File.MD.iso|value:formatted}", 
             "varlens" : "{File.MD.lens}",
+            "varmake" : "{File.MD.make}",
             "varmodel" : "{File.MD.model}",
             "varshutter_speed" : "{File.MD.shutterspeed|value:formatted}",
             "varlatitude" : "{File.MD.gpslatitude|value:rawfrm}",

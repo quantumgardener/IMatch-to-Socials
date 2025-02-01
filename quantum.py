@@ -32,9 +32,8 @@ class QuantumImage(IMatchImage):
         super().prepare_for_upload()
 
         # Remove spaces from keywords
-        self.keywords = [item.replace(" ","") for item in self.keywords]
-        self.keywords = [item.replace("-","") for item in self.keywords]
-        self.keywords.append("photography")
+        # self.keywords = [item.replace(" ","") for item in self.keywords]
+        # self.keywords = [item.replace("-","") for item in self.keywords]
 
         if self.circadatecreated != "":
             circa = "ca. "
@@ -53,7 +52,7 @@ class QuantumImage(IMatchImage):
     @property
     def is_valid(self) -> bool:
         result = super().is_valid
-        for attribute in []:
+        for attribute in ['make', 'model']:
             try:
                 if getattr(self, attribute).strip() == '':
                     self.errors.append(f"missing {attribute}")
