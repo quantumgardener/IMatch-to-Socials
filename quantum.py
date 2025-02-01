@@ -188,6 +188,8 @@ class QuantumController(PlatformController):
             if not os.path.exists(self.full_path(image.target_master)):
                 # Add only if not there. We use update flags to replace an existing file
                 self.create_master(image)
+
+            if not os.path.exists(self.full_path(image.target_thumbnail)):
                 self.create_thumbnail(image)
 
             self.write_markdown(image)
