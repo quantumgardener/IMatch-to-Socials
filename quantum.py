@@ -1,6 +1,7 @@
 ## Pre-requisites
 # pip3 install Mastodon.py
 import datetime
+import html
 import logging
 import os
 import re
@@ -43,14 +44,6 @@ class QuantumImage(IMatchImage):
         if len(self.keywords) > 0:
             tmp_description.append(" ".join(["#" + keyword for keyword in self.keywords]))  # Ensure keywords are hashtags
             tmp_description.append('')
-
-        shooting_info = self.shooting_info
-        if shooting_info != '':
-            tmp_description.append(shooting_info)
-        
-        camera_info = self.camera_info
-        if camera_info != '':
-            tmp_description.append(camera_info)
 
         self.full_description = "\n".join(tmp_description)
 
@@ -110,6 +103,7 @@ class QuantumController(PlatformController):
 
         # OK to overwrite this every time
         md_content = self.template_content.format(**template_values)
+        md_content = html.unescape(md_content)
         ## Clean out lines with "unknown"
         lines = md_content.split("\n")
         filtered_lines = [line for line in lines if "__unknown__" not in line]
