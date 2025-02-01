@@ -122,9 +122,7 @@ class QuantumController(PlatformController):
             aspect_ratio = height / width
             new_height = int(MASTER_WIDTH * aspect_ratio)
             img = img.resize((MASTER_WIDTH, new_height), Image.LANCZOS)
-
-            exif = img.info['exif']
-            img.save(self.full_path(image.target_master), format=MASTER_FORMAT, quality=MASTER_QUALITY, exif=exif)
+            img.save(self.full_path(image.target_master), format=MASTER_FORMAT, quality=MASTER_QUALITY)
 
         # Now add back XMP information
         exiftool = r"C:\Program Files\photools.com\imatch6\exiftool.exe"
@@ -227,8 +225,14 @@ class QuantumController(PlatformController):
             self.prepare_file_information(image)
 
             if image.operation == IMatchImage.OP_UPDATE:
+                if os.path.exists(self.full_path(image.target_master)):
+                    os.remove(self.full_path(image.target_master))
                 self.create_master(image)
+
+                if os.path.exists(self.full_path(image.target_thumbnail)):
+                    os.remove(self.full_path(image.target_thumbnail))
                 self.create_thumbnail(image)
+
 
             self.write_markdown(image)
 
@@ -238,7 +242,6 @@ class QuantumController(PlatformController):
                 'media_id' : image.media_id,
                 'url' : f'https://quantumgardener.info/photos/{image.media_id}'
                 })
-
         except KeyError:
             logging.error(f"{self.name}: validating an image field somewhere.")
             sys.exit()
