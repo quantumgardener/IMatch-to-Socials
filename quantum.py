@@ -23,8 +23,6 @@ THUMBNAIL_FORMAT = "WEBP"
 
 class QuantumImage(IMatchImage):
 
-    __MAX_SIZE = 25 * config.MB_SIZE
-
     def __init__(self, id, platform) -> None:
         super().__init__(id, platform)
         self.alt_text = None
@@ -61,8 +59,6 @@ class QuantumImage(IMatchImage):
                     self.errors.append(f"missing {attribute}")
             except AttributeError:
                 self.errors.append(f"missing {attribute}")
-        if self.size > QuantumImage.__MAX_SIZE:
-            self.errors.append(f"file too large")
         return len(self.errors) == 0 and result
 
     @property
@@ -71,6 +67,8 @@ class QuantumImage(IMatchImage):
         return len(res) != 0
 
 class QuantumController(PlatformController):
+
+    __MAX_SIZE = 25 * config.MB_SIZE
     
     def __init__(self, platform) -> None:
         super().__init__(platform)
@@ -150,6 +148,10 @@ class QuantumController(PlatformController):
             logging.error(f"An error occurred: {e}")
             sys.exit(1)
 
+        if os.path.getsize(self.full_path(image.target_master)) > QuantumController.__MAX_SIZE:
+            self.errors.append(f"file too large")
+            raise ValueError("Image too large after conversion")
+
     def create_thumbnail(self, image):
         with Image.open(image.filename) as img:
             width, height = img.size
@@ -199,6 +201,8 @@ class QuantumController(PlatformController):
         except KeyError:
             logging.error(f"{self.name}: Missed validating an image field somewhere.")
             sys.exit()
+        except ValueError:
+            pass
         except Exception as e:
             logging.error(f"{self.name}: An unexpected error occurred: {e}")
             sys.exit()
@@ -245,6 +249,8 @@ class QuantumController(PlatformController):
         except KeyError:
             logging.error(f"{self.name}: validating an image field somewhere.")
             sys.exit()
+        except ValueError:
+            pass
         except Exception as e:
             logging.error(f"{self.name}: unexpected error occurred: {e}")
             sys.exit()
