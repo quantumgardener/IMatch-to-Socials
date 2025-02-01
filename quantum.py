@@ -5,8 +5,9 @@ import html
 import logging
 import os
 import re
-import shutil
+import subprocess
 import sys
+
 from PIL import Image
 
 from imatch_image import IMatchImage
@@ -14,8 +15,9 @@ from platform_base import PlatformController
 import IMatchAPI as im
 import config
 
-IMAGE_WIDTH = 800
-IMAGE_FORMAT = "JPEG"
+MASTER_WIDTH = 800
+MASTER_FORMAT = "JPEG"
+MASTER_QUALITY = 85
 THUMBNAIL_WIDTH = 150
 THUMBNAIL_FORMAT = "WEBP"
 
@@ -82,9 +84,9 @@ class QuantumController(PlatformController):
         if not match:
             raise ValueError(f'{self.name}: Unable to extract digits from filename')
         image.media_id = match.group(1)
-        image.short_filename = f'{image.media_id}_{IMAGE_WIDTH}.{IMAGE_FORMAT.lower()}'
-        image.thumbnail_filename = f'{image.media_id}_{THUMBNAIL_WIDTH}.{THUMBNAIL_FORMAT.lower()}'
-        image.target_md = os.path.join(self.api,f'{image.media_id}.md')
+        image.target_master = f'{image.media_id}_{MASTER_WIDTH}.{MASTER_FORMAT.lower()}' 
+        image.target_thumbnail = f'{image.media_id}_{THUMBNAIL_WIDTH}.{THUMBNAIL_FORMAT.lower()}'
+        image.target_md = os.path.join(self.api, f'{image.media_id}.md')
 
     def write_markdown(self, image):
         template_values = {
@@ -93,13 +95,13 @@ class QuantumController(PlatformController):
             'date_taken' : image.date_time.strftime('%Y-%m-%dT%H:%M:%S'),
             'description' : f'{image.headline} {image.description.replace("\n", " ")}',
             'focal_length' : image.focal_length if image.focal_length != "" else "__unknown__",
-            'image_path' : image.short_filename,
+            'image_path' : image.target_master,
             'iso' : image.iso if image.iso != "" else "__unknown__",
             'lens' : image.lens if image.lens != "" else "__unknown__",
             'location' : image.location,
             'shutter_speed' : image.shutter_speed if image.shutter_speed != "" else "__unknown__",
             'title' : image.title,
-            'thumbnail' : image.thumbnail_filename
+            'thumbnail' : image.target_thumbnail
         }
 
         # OK to overwrite this every time
@@ -113,13 +115,51 @@ class QuantumController(PlatformController):
         with open(image.target_md, 'w') as file:
             file.write(filtered_markdown)
 
-    def convert_and_resize_image(self, input_path, output_path, max_width, format, quality=100):       
-        with Image.open(input_path) as img:
+    def create_master(self, image):
+        # Resize image
+        with Image.open(image.filename) as img:
             width, height = img.size
             aspect_ratio = height / width
-            new_height = int(max_width * aspect_ratio)
-            img = img.resize((max_width, new_height), Image.LANCZOS)
-            img.save(output_path, format=format, quality=quality)
+            new_height = int(MASTER_WIDTH * aspect_ratio)
+            img = img.resize((MASTER_WIDTH, new_height), Image.LANCZOS)
+
+            exif = img.info['exif']
+            img.save(self.full_path(image.target_master), format=MASTER_FORMAT, quality=MASTER_QUALITY, exif=exif)
+
+        # Now add back XMP information
+        exiftool = r"C:\Program Files\photools.com\imatch6\exiftool.exe"
+        exiftool = os.path.normpath(exiftool)
+        command = [
+            exiftool,
+            '-TagsFromFile',
+            image.filename,
+            '-all:all',
+            '-overwrite_original',
+            self.full_path(image.target_master)
+        ]
+
+        try:
+            result = subprocess.run(command, stdout=subprocess.PIPE, stderr=subprocess.PIPE, text=True)
+            if result.returncode != 0:
+                logging.error(f"Error copying metadata: {result.stderr}")
+                sys.exit(1)
+            else:
+                logging.debug("Metadata copied successfully.")
+        except FileNotFoundError:
+            logging.error(f"ExifTool not found at {exiftool}")
+            sys.exit(1)
+        except Exception as e:
+            logging.error(f"An error occurred: {e}")
+            sys.exit(1)
+
+    def create_thumbnail(self, image):
+        with Image.open(image.filename) as img:
+            width, height = img.size
+            aspect_ratio = height / width
+            new_height = int(THUMBNAIL_WIDTH * aspect_ratio)
+            img = img.resize((THUMBNAIL_WIDTH, new_height), Image.LANCZOS)
+            img.save(self.full_path(image.target_thumbnail), format=THUMBNAIL_FORMAT)
+
 
     def connect(self):
         if self.api is not None:
@@ -137,20 +177,18 @@ class QuantumController(PlatformController):
             else:
                 raise FileNotFoundError(f'Connection error: {quantum_path} not found.')
 
+    def full_path(self, path):
+        return os.path.join(self.api, path)
+    
     def commit_add(self, image):
         """Make the api call to commit the image to the platform, and update IMatch with reference details"""
         try:
             self.prepare_file_information(image)
             
-            target_filename = os.path.join(self.api, image.short_filename)
-            if not os.path.exists(target_filename):
+            if not os.path.exists(self.full_path(image.target_master)):
                 # Add only if not there. We use update flags to replace an existing file
-                self.convert_and_resize_image(image.filename, target_filename, IMAGE_WIDTH, IMAGE_FORMAT, 85)
-
-            thumbnail_filename = os.path.join(self.api, image.thumbnail_filename)
-            if not os.path.exists(thumbnail_filename):
-                # Add only if not there. We use update flags to replace an existing file
-                self.convert_and_resize_image(image.filename, thumbnail_filename, THUMBNAIL_WIDTH, THUMBNAIL_FORMAT)
+                self.create_master(image)
+                self.create_thumbnail(image)
 
             self.write_markdown(image)
             
@@ -172,14 +210,12 @@ class QuantumController(PlatformController):
         try:
             self.prepare_file_information(image)
 
-            target_filename = os.path.join(self.api, image.short_filename)
-            if os.path.exists(target_filename):
-                os.remove(target_filename)
-            thumbnail_filename = os.path.join(self.api, image.thumbnail_filename)
-            if os.path.exists(thumbnail_filename):
-                os.remove(thumbnail_filename)
-            if os.path.exists(image.target_md):
-                os.remove(image.target_md)
+            if os.path.exists(self.full_path(image.target_master)):
+                os.remove(self.full_path(image.target_master))
+            if os.path.exists(self.full_path(image.target_thumbnail)):
+                os.remove(self.full_path(image.target_thumbnail))
+            if os.path.exists(self.full_path(image.target_md)):
+                os.remove(self.full_path(image.target_md))
 
         except Exception as e:
             logging.error(f"{self.name}: An unexpected error occurred: {e}")
@@ -191,11 +227,8 @@ class QuantumController(PlatformController):
             self.prepare_file_information(image)
 
             if image.operation == IMatchImage.OP_UPDATE:
-                target_filename = os.path.join(self.api, image.short_filename)
-                self.convert_and_resize_image(image.filename, target_filename, IMAGE_WIDTH, IMAGE_FORMAT, 85)
-
-                thumbnail_filename = os.path.join(self.api, image.thumbnail_filename)
-                self.convert_and_resize_image(image.filename, thumbnail_filename, THUMBNAIL_WIDTH, THUMBNAIL_FORMAT)
+                self.create_master(image)
+                self.create_thumbnail(image)
 
             self.write_markdown(image)
 
