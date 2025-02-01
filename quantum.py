@@ -232,6 +232,13 @@ class QuantumController(PlatformController):
 
             self.write_markdown(image)
 
+            # Update the image in IMatch by adding the attributes below.
+            im.IMatchAPI().set_attributes(self.name, image.id, data = {
+                'posted' : datetime.datetime.now().isoformat()[:10],
+                'media_id' : image.media_id,
+                'url' : f'https://quantumgardener.info/photos/{image.media_id}'
+                })
+
         except KeyError:
             logging.error(f"{self.name}: validating an image field somewhere.")
             sys.exit()

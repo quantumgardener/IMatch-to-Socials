@@ -295,8 +295,18 @@ class FlickrController(PlatformController):
                         group_id = group, 
                         photo_id=photo_id
                         )   
+                    
+            # Update the image in IMatch by adding the attributes below.
+            posted = datetime.now().isoformat()[:10]
+            im.IMatchAPI.set_attributes(self.name, image.id, data = {
+                'posted' : posted,
+                'photo_id' : photo_id,
+                'url' : f"{im.IMatchAPI.get_application_variable("flickr_url")}/{photo_id}"
+                })
+            
         except flickrapi.FlickrError as fe:
             logging.error(fe)
             logging.error(response)
             sys.exit(1)
+
 
