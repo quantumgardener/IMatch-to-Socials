@@ -15,8 +15,9 @@ import IMatchAPI as im
 import config
 
 IMAGE_WIDTH = 800
-IMAGE_FORMAT = "WEBP"
+IMAGE_FORMAT = "JPEG"
 THUMBNAIL_WIDTH = 150
+THUMBNAIL_FORMAT = "WEBP"
 
 class QuantumImage(IMatchImage):
 
@@ -82,7 +83,7 @@ class QuantumController(PlatformController):
             raise ValueError(f'{self.name}: Unable to extract digits from filename')
         image.media_id = match.group(1)
         image.short_filename = f'{image.media_id}_{IMAGE_WIDTH}.{IMAGE_FORMAT.lower()}'
-        image.thumbnail_filename = f'{image.media_id}_{THUMBNAIL_WIDTH}.{IMAGE_FORMAT.lower()}'
+        image.thumbnail_filename = f'{image.media_id}_{THUMBNAIL_WIDTH}.{THUMBNAIL_FORMAT.lower()}'
         image.target_md = os.path.join(self.api,f'{image.media_id}.md')
 
     def write_markdown(self, image):
@@ -112,13 +113,13 @@ class QuantumController(PlatformController):
         with open(image.target_md, 'w') as file:
             file.write(filtered_markdown)
 
-    def convert_and_resize_image(self, input_path, output_path, max_width):       
+    def convert_and_resize_image(self, input_path, output_path, max_width, format, quality=100):       
         with Image.open(input_path) as img:
             width, height = img.size
             aspect_ratio = height / width
             new_height = int(max_width * aspect_ratio)
             img = img.resize((max_width, new_height), Image.LANCZOS)
-            img.save(output_path, format=IMAGE_FORMAT)
+            img.save(output_path, format=format, quality=quality)
 
     def connect(self):
         if self.api is not None:
@@ -144,12 +145,12 @@ class QuantumController(PlatformController):
             target_filename = os.path.join(self.api, image.short_filename)
             if not os.path.exists(target_filename):
                 # Add only if not there. We use update flags to replace an existing file
-                self.convert_and_resize_image(image.filename, target_filename, IMAGE_WIDTH)
+                self.convert_and_resize_image(image.filename, target_filename, IMAGE_WIDTH, IMAGE_FORMAT, 85)
 
             thumbnail_filename = os.path.join(self.api, image.thumbnail_filename)
             if not os.path.exists(thumbnail_filename):
                 # Add only if not there. We use update flags to replace an existing file
-                self.convert_and_resize_image(image.filename, thumbnail_filename, THUMBNAIL_WIDTH)
+                self.convert_and_resize_image(image.filename, thumbnail_filename, THUMBNAIL_WIDTH, THUMBNAIL_FORMAT)
 
             self.write_markdown(image)
             
@@ -191,10 +192,10 @@ class QuantumController(PlatformController):
 
             if image.operation == IMatchImage.OP_UPDATE:
                 target_filename = os.path.join(self.api, image.short_filename)
-                self.convert_and_resize_image(image.filename, target_filename, IMAGE_WIDTH)
+                self.convert_and_resize_image(image.filename, target_filename, IMAGE_WIDTH, IMAGE_FORMAT, 85)
 
                 thumbnail_filename = os.path.join(self.api, image.thumbnail_filename)
-                self.convert_and_resize_image(image.filename, thumbnail_filename, THUMBNAIL_WIDTH)
+                self.convert_and_resize_image(image.filename, thumbnail_filename, THUMBNAIL_WIDTH, THUMBNAIL_FORMAT)
 
             self.write_markdown(image)
 
