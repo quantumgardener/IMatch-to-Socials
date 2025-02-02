@@ -91,7 +91,7 @@ if __name__ == "__main__":
             controller.add_images()
             controller.update_images()
             controller.delete_images()
-            controller.process_errors()
+            controller.finalise()
             controller.summarise()
         except TypeError: 
             print(f"{controller.name}: 0 images gathered from IMatch.")

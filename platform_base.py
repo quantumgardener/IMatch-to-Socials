@@ -126,6 +126,9 @@ class PlatformController():
                 for error in image.errors:
                     im.IMatchAPI().assign_category("|".join([config.ROOT_CATEGORY,self.name,config.ERROR_CATEGORY,error]), image.id)
 
+    def finalise(self):
+        self.process_errors()
+
     def summarise(self):
         """Output summary of images processed"""
         stats = self.stats

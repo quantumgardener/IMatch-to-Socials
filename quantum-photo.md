@@ -1,5 +1,6 @@
 ---
 tags: 
+  - class/photo
 datetime: {date_taken}
 updated: 
 title: {title}
