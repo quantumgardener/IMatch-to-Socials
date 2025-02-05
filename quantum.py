@@ -72,6 +72,7 @@ class QuantumController(PlatformController):
     __PHOTOS_PATH = "photos"
     __ALBUMS_PATH = "albums"
     __PHOTO_TEMPLATE = "photo"
+    __MAP_TEMPLATE = "map"
     __ALBUM_TEMPLATE = "album"
     __CARD_TEMPLATE = "card"
     
@@ -81,6 +82,7 @@ class QuantumController(PlatformController):
         self.allowed_formats = [im.IMatchAPI.FORMAT_WEBP, im.IMatchAPI.FORMAT_JPEG]
         self.templates= {
             QuantumController.__PHOTO_TEMPLATE : None,
+            QuantumController.__MAP_TEMPLATE : None,
             QuantumController.__ALBUM_TEMPLATE : None,
             QuantumController.__CARD_TEMPLATE : None,
         }
@@ -124,11 +126,26 @@ class QuantumController(PlatformController):
         image.target_md = os.path.join(self.api[QuantumController.__PHOTOS_PATH], f'{image.media_id}.md')
 
     def write_photo_markdown(self, image):
+
+        map_values = {
+            'latitude' : image.latitude,
+            'longitude' : image.longitude,
+            'key' : im.IMatchAPI.get_application_variable("quantum_map_key")            
+        }
+
+        if not image.is_image_in_category(im.IMatchAPI.get_application_variable("quantum_hide_me")):
+            map = self.templates[QuantumController.__MAP_TEMPLATE].format(**map_values)
+            logging.debug("Map included")
+        else:
+            map = ""
+            logging.debug("Map skipped")
+        
+
         template_values = {
             'aperture' : '{0:.3g}'.format(float(image.aperture)) if image.aperture != "" else "__unknown__",
             'camera' : image.model,
             'date_taken' : image.date_time.strftime('%Y-%m-%dT%H:%M:%S'),
-            'description' : f'{image.headline} {image.description.replace("\n", " ")}',
+            'description' : html.unescape(f'{image.headline} {image.description.replace("\n", " ")}'),
             'focal_length' : image.focal_length if image.focal_length != "" else "__unknown__",
             'image_path' : image.target_master,
             'iso' : image.iso if image.iso != "" else "__unknown__",
@@ -136,12 +153,16 @@ class QuantumController(PlatformController):
             'location' : image.location,
             'shutter_speed' : image.shutter_speed if image.shutter_speed != "" else "__unknown__",
             'title' : image.title,
-            'thumbnail' : image.target_thumbnail
+            'thumbnail' : image.target_thumbnail,
+            'map' : map,
         }
+
+        if( image.latitude == "" or image.longitude == ""):
+            raise ValueError(f"Missing latitude and longitude in image {image.name}")
 
         # OK to overwrite this every time
         md_content = self.templates[QuantumController.__PHOTO_TEMPLATE].format(**template_values)
-        md_content = html.unescape(md_content)
+        ##md_content = html.unescape(md_content)
         ## Clean out lines with "unknown"
         lines = md_content.split("\n")
         filtered_lines = [line for line in lines if "__unknown__" not in line]
@@ -166,7 +187,12 @@ class QuantumController(PlatformController):
             exiftool,
             '-TagsFromFile',
             image.filename,
-            '-all:all',
+            '-xmp-xmpRights:All',
+            '-xmp-xmp:Rights',
+            '-xmp-dc:rights',
+            '-XMP-photoshop:Country',
+            '-XMP-photoshop:State',
+            '-XMP-photoshop:City',
             '-overwrite_original',
             self.build_photo_path(image.target_master)
         ]
@@ -216,6 +242,16 @@ class QuantumController(PlatformController):
                     else:
                         logging.error('Connection error: {photo_template_filename} not found.')
                         sys.exit(1)
+
+                    map_template_filename = os.path.join(os.path.dirname(os.path.abspath(__file__)),'quantum-photo-map.md')
+                    if os.path.exists(map_template_filename):
+                        with open(map_template_filename, 'r') as file:
+                            self.templates[QuantumController.__MAP_TEMPLATE] = file.read()
+                    else:
+                        logging.error('Connection error: {map_template_filename} not found.')
+                        sys.exit(1)
+
+
                 else:
                     logging.error(f'Connection error: {self.api[QuantumController.__PHOTOS_PATH]} not found.')
                     sys.exit(1)
