@@ -1,4 +1,4 @@
-> ** This project is no longer being maintained. It has been replaced by [IMatch to Site](https://github.com/quantumgardener/imatch-to-site).
+> ** This project is no longer being maintained. It has been replaced by [IMatch to Site](https://github.com/quantumgardener/imatch-to-site)**.
 
 # IMatch-to-Socials
 
