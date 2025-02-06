@@ -1,3 +1,5 @@
+> ** This project is no longer being maintained. It has been replaced by [IMatch to Site](https://github.com/quantumgardener/imatch-to-site).
+
 # IMatch-to-Socials
 
 **IMatch-to-socials** automates uploading images from [IMatch](https://www.photools.com) to flickr and pixelfed. IMatch is a powerful digital asset management systems for managing photos and their metadata. I've been using it since forever. One of the features is a full backend API for manipulating information in the database using scripts.
